@@ -70,7 +70,7 @@ class Orchestrator:
         )
         return workflow
 
-    def approve(self, workflow: Workflow) -> Workflow:
+    def approve(self, workflow: Workflow, actor_id: str) -> Workflow:
         if (
             workflow.stage != WorkflowStage.HUMAN_REVIEW
             or workflow.status != WorkflowStatus.AWAITING_HUMAN
@@ -84,11 +84,12 @@ class Orchestrator:
                 action="human_approve",
                 from_stage=previous,
                 to_stage=workflow.stage,
+                actor_id=actor_id,
             )
         )
         return workflow
 
-    def reject(self, workflow: Workflow, reason: str) -> Workflow:
+    def reject(self, workflow: Workflow, reason: str, actor_id: str) -> Workflow:
         if (
             workflow.stage != WorkflowStage.HUMAN_REVIEW
             or workflow.status != WorkflowStatus.AWAITING_HUMAN
@@ -103,6 +104,7 @@ class Orchestrator:
                 from_stage=previous,
                 to_stage=workflow.stage,
                 note=reason,
+                actor_id=actor_id,
             )
         )
         return workflow

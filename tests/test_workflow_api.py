@@ -34,7 +34,9 @@ def test_workflow_api_runs_to_human_gate() -> None:
     assert response.json()["stage"] == "human_review"
     assert response.json()["status"] == "awaiting_human"
 
-    approved = client.post(f"/api/v1/workflows/{workflow_id}/approve")
+    approved = client.post(
+        f"/api/v1/workflows/{workflow_id}/approve", json={"actor_id": "reviewer-1"}
+    )
     assert approved.status_code == 200
     assert approved.json()["stage"] == "completed"
 
@@ -48,5 +50,7 @@ def test_early_approval_returns_conflict() -> None:
     created = client.post("/api/v1/workflows", json={"topic": "A test topic"})
     workflow_id = created.json()["id"]
 
-    response = client.post(f"/api/v1/workflows/{workflow_id}/approve")
+    response = client.post(
+        f"/api/v1/workflows/{workflow_id}/approve", json={"actor_id": "reviewer-1"}
+    )
     assert response.status_code == 409

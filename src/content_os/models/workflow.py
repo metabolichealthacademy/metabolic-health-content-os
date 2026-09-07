@@ -35,6 +35,7 @@ class WorkflowEvent(BaseModel):
     from_stage: WorkflowStage
     to_stage: WorkflowStage
     note: str | None = None
+    actor_id: str | None = None
 
 
 class WorkflowCreate(BaseModel):
@@ -55,3 +56,6 @@ class Workflow(BaseModel):
     artifacts: dict[str, Any] = Field(default_factory=dict)
     history: list[WorkflowEvent] = Field(default_factory=list)
     revision_count: int = 0
+    version: int = 0
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
