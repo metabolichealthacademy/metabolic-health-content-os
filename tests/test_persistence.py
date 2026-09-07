@@ -1,13 +1,14 @@
 from pathlib import Path
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import delete, inspect, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from content_os.models.workflow import Workflow, WorkflowEvent, WorkflowStage
 from content_os.persistence.database import build_engine, initialize_database
 from content_os.persistence.repository import ConcurrentUpdateError, SqlWorkflowRepository
-from content_os.persistence.tables import WorkflowEventRow
+from content_os.persistence.tables import WorkflowEventRow, WorkflowRow
 
 
 @pytest.fixture
@@ -83,3 +84,28 @@ def test_repository_has_no_audit_update_or_delete_api(
 ) -> None:
     assert not hasattr(repository, "update_event")
     assert not hasattr(repository, "delete_event")
+
+
+def test_production_initialization_does_not_bypass_migrations(tmp_path: Path) -> None:
+    engine = build_engine(f"sqlite:///{tmp_path / 'production.db'}")
+
+    initialize_database(engine, environment="production")
+
+    assert inspect(engine).get_table_names() == []
+
+
+def test_audit_history_restricts_parent_workflow_deletion(
+    repository: SqlWorkflowRepository,
+) -> None:
+    workflow = Workflow(topic="Retained topic", audience="general public", sources=[], claims=[])
+    workflow.history.append(
+        WorkflowEvent(
+            action="create",
+            from_stage=WorkflowStage.RESEARCH,
+            to_stage=WorkflowStage.RESEARCH,
+        )
+    )
+    repository.create(workflow)
+
+    with pytest.raises(IntegrityError), Session(repository.engine) as session, session.begin():
+        session.execute(delete(WorkflowRow).where(WorkflowRow.id == str(workflow.id)))

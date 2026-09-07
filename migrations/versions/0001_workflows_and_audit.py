@@ -33,7 +33,7 @@ def upgrade() -> None:
         sa.Column(
             "workflow_id",
             sa.String(36),
-            sa.ForeignKey("workflows.id", ondelete="CASCADE"),
+            sa.ForeignKey("workflows.id", ondelete="RESTRICT"),
             nullable=False,
         ),
         sa.Column("sequence", sa.Integer(), nullable=False),

@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from content_os.config import get_settings
 from content_os.models.workflow import Workflow, WorkflowCreate, WorkflowEvent, WorkflowStage
 from content_os.orchestration.orchestrator import InvalidTransitionError, Orchestrator
 from content_os.persistence.database import get_engine, initialize_database
@@ -13,7 +14,7 @@ from content_os.persistence.repository import ConcurrentUpdateError, SqlWorkflow
 
 router = APIRouter(prefix="/workflows", tags=["workflows"])
 orchestrator = Orchestrator()
-initialize_database(get_engine())
+initialize_database(get_engine(), get_settings().app_environment)
 store = SqlWorkflowRepository(get_engine())
 
 

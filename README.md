@@ -39,7 +39,8 @@ alembic upgrade head
 The application exposes no audit-event update or delete operation. Human decisions record an
 `actor_id`, time, transition, and reason when rejected. V1 must not store patient-identifiable
 information. Retention and deletion policy enforcement will be added with authentication before
-production use.
+production use. Audit rows restrict deletion of their parent workflow. Production startup does not
+create tables automatically; deployment must run the reviewed Alembic migrations first.
 
 ## Local setup
 
