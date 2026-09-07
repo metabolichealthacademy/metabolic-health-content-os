@@ -12,6 +12,7 @@ Private, evidence-oriented content operations foundation for Metabolic Health Ac
 - Ruff linting and GitHub Actions continuous integration
 - Five-stage agent pipeline with a deterministic orchestrator
 - Safety revision routing and mandatory human approval
+- SQL persistence with optimistic locking and append-only application audit events
 
 ## V1 workflow architecture
 
@@ -25,7 +26,20 @@ The workflow runs in a fixed order:
 6. Human approval or rejection
 
 The current agents are deterministic foundations. They do not retrieve live evidence, assess
-scientific validity, call an AI model, publish content, or persist data beyond the running process.
+scientific validity, call an AI model, or publish content.
+
+Workflow state now persists in a SQL database. SQLite is the safe local default; PostgreSQL is
+supported by installing `.[postgres]` and setting `DATABASE_URL`. Alembic owns production schema
+migrations.
+
+```bash
+alembic upgrade head
+```
+
+The application exposes no audit-event update or delete operation. Human decisions record an
+`actor_id`, time, transition, and reason when rejected. V1 must not store patient-identifiable
+information. Retention and deletion policy enforcement will be added with authentication before
+production use.
 
 ## Local setup
 
@@ -106,4 +120,5 @@ The test suite requires at least 90% code coverage.
 ```
 
 This foundation contains no patient data, clinical decision logic, medical RAG, authentication,
-production secrets, external model calls, or publishing integration.
+production secrets, external model calls, or publishing integration. Database credentials belong
+only in environment configuration and must never be committed.

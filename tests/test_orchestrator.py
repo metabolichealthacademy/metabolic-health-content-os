@@ -42,7 +42,7 @@ def test_valid_workflow_requires_all_agents_and_human_approval() -> None:
     assert workflow.status == WorkflowStatus.AWAITING_HUMAN
     assert workflow.artifacts["production"]["publish_ready"] is False
 
-    orchestrator.approve(workflow)
+    orchestrator.approve(workflow, actor_id="reviewer-1")
     assert workflow.stage == WorkflowStage.COMPLETED
     assert workflow.status == WorkflowStatus.COMPLETED
 
@@ -64,7 +64,7 @@ def test_safety_rejection_routes_back_to_content() -> None:
 
 def test_human_cannot_approve_early() -> None:
     with pytest.raises(InvalidTransitionError, match="only allowed after production"):
-        Orchestrator().approve(valid_workflow())
+        Orchestrator().approve(valid_workflow(), actor_id="reviewer-1")
 
 
 def test_completed_workflow_cannot_advance() -> None:

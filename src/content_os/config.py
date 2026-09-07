@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     app_name: str = "Metabolic Health Content OS"
     app_environment: str = "development"
     app_version: str = "0.1.0"
+    database_url: str = "sqlite:///./content_os.db"
 
     model_config = SettingsConfigDict(
         env_file=".env",
