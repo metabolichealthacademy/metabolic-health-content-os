@@ -10,6 +10,22 @@ Private, evidence-oriented content operations foundation for Metabolic Health Ac
 - Environment-based configuration with safe development defaults
 - Pytest test suite with coverage enforcement
 - Ruff linting and GitHub Actions continuous integration
+- Five-stage agent pipeline with a deterministic orchestrator
+- Safety revision routing and mandatory human approval
+
+## V1 workflow architecture
+
+The workflow runs in a fixed order:
+
+1. Research intake
+2. Evidence structure validation
+3. Content drafting
+4. Safety review
+5. Production packaging
+6. Human approval or rejection
+
+The current agents are deterministic foundations. They do not retrieve live evidence, assess
+scientific validity, call an AI model, publish content, or persist data beyond the running process.
 
 ## Local setup
 
@@ -43,6 +59,14 @@ Expected response:
 
 Interactive API documentation is available at `http://127.0.0.1:8000/docs` outside production.
 
+Workflow endpoints are available under `/api/v1/workflows`:
+
+- `POST /api/v1/workflows`
+- `GET /api/v1/workflows/{id}`
+- `POST /api/v1/workflows/{id}/advance`
+- `POST /api/v1/workflows/{id}/approve`
+- `POST /api/v1/workflows/{id}/reject`
+
 ## Quality checks
 
 ```bash
@@ -66,8 +90,11 @@ The test suite requires at least 90% code coverage.
 .
 ├── .github/workflows/ci.yml
 ├── src/content_os/
-│   ├── api/health.py
+│   ├── agents/
+│   ├── api/
 │   ├── config.py
+│   ├── models/
+│   ├── orchestration/
 │   └── main.py
 ├── tests/
 │   ├── test_config.py
@@ -78,4 +105,5 @@ The test suite requires at least 90% code coverage.
 └── README.md
 ```
 
-This foundation contains no patient data, clinical decision logic, medical RAG, authentication, or production secrets.
+This foundation contains no patient data, clinical decision logic, medical RAG, authentication,
+production secrets, external model calls, or publishing integration.
