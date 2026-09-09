@@ -2,7 +2,7 @@
 
 Private, evidence-oriented content operations foundation for Metabolic Health Academy.
 
-## Task 1 foundation
+## Current foundation
 
 - Python 3.12 package using a `src/` layout
 - FastAPI application with versioned routes
@@ -13,6 +13,8 @@ Private, evidence-oriented content operations foundation for Metabolic Health Ac
 - Five-stage agent pipeline with a deterministic orchestrator
 - Safety revision routing and mandatory human approval
 - SQL persistence with optimistic locking and append-only application audit events
+- Provider-independent AI request/response contracts
+- Bounded AI gateway with deterministic mock provider for testing
 
 ## V1 workflow architecture
 
@@ -25,10 +27,21 @@ The workflow runs in a fixed order:
 5. Production packaging
 6. Human approval or rejection
 
-The current agents are deterministic foundations. They do not retrieve live evidence, assess
-scientific validity, call an AI model, or publish content.
+The current agents remain deterministic foundations. Task 4 adds a provider-independent AI layer,
+but no external AI model is connected. The mock provider exists only to verify contracts, retries,
+error handling, and future adapter compatibility. The system still does not retrieve live evidence,
+assess scientific validity, or publish content automatically.
 
-Workflow state now persists in a SQL database. SQLite is the safe local default; PostgreSQL is
+The AI layer uses three boundaries:
+
+1. `AIRequest` and `AIResponse` define validated provider-neutral contracts.
+2. `AIProvider` defines the adapter interface that future providers must implement.
+3. `AIGateway` executes bounded calls and normalizes provider failures.
+
+The only Task 4 provider is `MockAIProvider`. Real providers such as OpenAI, Gemini, Anthropic, or
+local models must be added as separate reviewed adapters after this foundation is approved.
+
+Workflow state persists in a SQL database. SQLite is the safe local default; PostgreSQL is
 supported by installing `.[postgres]` and setting `DATABASE_URL`. Alembic owns production schema
 migrations.
 
@@ -106,14 +119,21 @@ The test suite requires at least 90% code coverage.
 ├── .github/workflows/ci.yml
 ├── src/content_os/
 │   ├── agents/
+│   ├── ai/
+│   │   ├── providers/
+│   │   ├── gateway.py
+│   │   ├── models.py
+│   │   └── provider.py
 │   ├── api/
 │   ├── config.py
 │   ├── models/
 │   ├── orchestration/
 │   └── main.py
 ├── tests/
+│   ├── test_ai_gateway.py
 │   ├── test_config.py
-│   └── test_health.py
+│   ├── test_health.py
+│   └── test_orchestrator.py
 ├── .env.example
 ├── .gitignore
 ├── pyproject.toml
