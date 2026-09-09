@@ -1,7 +1,8 @@
 """Deterministic mock AI provider used for Task 4 verification."""
 
-from collections.abc import Callable
 from uuid import uuid4
+
+from collections.abc import Callable
 
 from content_os.ai.models import AIRequest, AIResponse
 from content_os.ai.provider import AIProvider, AIProviderError
