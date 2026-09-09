@@ -6,7 +6,6 @@ from uuid import uuid4
 from content_os.ai.models import AIRequest, AIResponse
 from content_os.ai.provider import AIProvider, AIProviderError
 
-
 MockBehavior = Callable[[AIRequest, int], AIResponse]
 
 
