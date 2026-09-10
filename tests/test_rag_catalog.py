@@ -73,7 +73,7 @@ def test_retrieval_uses_publication_timestamps_for_same_day_versions() -> None:
 
 def test_retrieval_uses_publication_date_before_retrieval_time_for_same_day_versions() -> None:
     catalog = EvidenceCatalog()
-    shared_effective_on = date(2026, 1, 1)
+    shared_effective_on = date(2026, 2, 1)
     catalog.ingest(
         [
             document(
