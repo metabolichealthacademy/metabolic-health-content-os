@@ -90,13 +90,15 @@ class EvidenceCatalog:
             candidate.effective_on,
             candidate.published_on,
             candidate.retrieved_at,
+            candidate.version_id,
         )
         current_key = (
             current.effective_on,
             current.published_on,
             current.retrieved_at,
+            current.version_id,
         )
-        return candidate_key >= current_key
+        return candidate_key > current_key
 
     @staticmethod
     def _validate(document: EvidenceDocument) -> None:
