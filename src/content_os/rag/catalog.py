@@ -59,10 +59,20 @@ class EvidenceCatalog:
             haystack = f"{document.title} {document.text}".casefold()
             matched = [term for term in terms if term in haystack]
             if matched:
-                hits.append(RetrievalHit(document=document, score=len(matched), matched_terms=matched))
+                hits.append(
+                    RetrievalHit(
+                        document=document,
+                        score=len(matched),
+                        matched_terms=matched,
+                    )
+                )
         return sorted(
             hits,
-            key=lambda hit: (-hit.score, -hit.document.effective_on.toordinal(), hit.document.source_id),
+            key=lambda hit: (
+                -hit.score,
+                -hit.document.effective_on.toordinal(),
+                hit.document.source_id,
+            ),
         )[:limit]
 
     def _current_versions(self, as_of: date) -> list[EvidenceDocument]:
