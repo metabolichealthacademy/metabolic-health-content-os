@@ -90,3 +90,31 @@ def test_catalog_exposes_no_patient_input_or_model_provider_boundary() -> None:
     assert not hasattr(catalog, "ingest_patient_text")
     assert not hasattr(catalog, "fetch_url")
     assert not hasattr(catalog, "publish")
+
+
+def test_retrieval_validates_inputs_and_omits_unmatched_or_future_versions() -> None:
+    catalog = EvidenceCatalog()
+    catalog.ingest([document("2027-01", date(2027, 1, 1), "Future diabetes evidence.")])
+
+    with pytest.raises(ValueError, match="query"):
+        catalog.retrieve(" ", as_of=date(2026, 1, 1))
+    with pytest.raises(ValueError, match="limit"):
+        catalog.retrieve("diabetes", as_of=date(2026, 1, 1), limit=0)
+    assert catalog.retrieve("unmatched", as_of=date(2027, 1, 1)) == []
+    assert catalog.retrieve("diabetes", as_of=date(2026, 1, 1)) == []
+
+
+def test_ingestion_rejects_effective_date_before_publication() -> None:
+    catalog = EvidenceCatalog()
+
+    with pytest.raises(EvidenceIngestionError, match="effective_on"):
+        catalog.ingest(
+            [
+                document(
+                    "invalid-dates",
+                    date(2026, 1, 1),
+                    "Evidence text.",
+                    published_on=date(2026, 2, 1),
+                )
+            ]
+        )
