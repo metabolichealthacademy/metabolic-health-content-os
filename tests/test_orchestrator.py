@@ -71,6 +71,8 @@ def test_revision_required_workflow_can_be_human_rejected() -> None:
     for _ in range(4):
         orchestrator.advance(workflow)
 
+    assert workflow.stage == WorkflowStage.CONTENT
+    assert workflow.status == WorkflowStatus.REVISION_REQUIRED
     orchestrator.reject(workflow, reason="Unable to support claims safely", actor_id="reviewer-1")
 
     assert workflow.stage == WorkflowStage.REJECTED

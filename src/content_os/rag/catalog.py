@@ -1,7 +1,7 @@
 """Allowlisted ingestion and deterministic, version-aware lexical retrieval."""
 
 from collections.abc import Iterable
-from datetime import date
+from datetime import UTC, date, datetime
 from hashlib import sha256
 from urllib.parse import urlparse
 
@@ -88,14 +88,14 @@ class EvidenceCatalog:
     def _is_newer_version(candidate: EvidenceDocument, current: EvidenceDocument) -> bool:
         candidate_key = (
             candidate.effective_on,
-            candidate.published_on,
-            candidate.retrieved_at,
+            candidate.published_on or date.min,
+            candidate.retrieved_at or datetime.min.replace(tzinfo=UTC),
             candidate.version_id,
         )
         current_key = (
             current.effective_on,
-            current.published_on,
-            current.retrieved_at,
+            current.published_on or date.min,
+            current.retrieved_at or datetime.min.replace(tzinfo=UTC),
             current.version_id,
         )
         return candidate_key > current_key
