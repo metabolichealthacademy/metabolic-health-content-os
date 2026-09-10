@@ -46,7 +46,7 @@ def test_retrieval_selects_version_current_at_as_of_date() -> None:
     assert str(new_hit.document.canonical_url).startswith("https://www.niddk.nih.gov/")
 
 
-def test_retrieval_uses_publication_timestamps_for_same_day_versions() -> None:
+def test_retrieval_uses_retrieval_time_for_same_day_versions() -> None:
     catalog = EvidenceCatalog()
     shared_effective_on = date(2026, 1, 1)
     catalog.ingest(

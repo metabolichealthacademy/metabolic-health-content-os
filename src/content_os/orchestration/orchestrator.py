@@ -94,7 +94,10 @@ class Orchestrator:
             workflow.stage == WorkflowStage.HUMAN_REVIEW
             and workflow.status == WorkflowStatus.AWAITING_HUMAN
         )
-        can_reject_after_revision = workflow.status == WorkflowStatus.REVISION_REQUIRED
+        can_reject_after_revision = (
+            workflow.stage == WorkflowStage.CONTENT
+            and workflow.status == WorkflowStatus.REVISION_REQUIRED
+        )
         if not can_reject_from_human_review and not can_reject_after_revision:
             raise InvalidTransitionError(
                 "Human rejection is only allowed after production or when revision is required"
