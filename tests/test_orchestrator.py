@@ -62,9 +62,32 @@ def test_safety_rejection_routes_back_to_content() -> None:
     assert workflow.artifacts["safety"]["approved"] is False
 
 
+def test_revision_required_workflow_can_be_human_rejected() -> None:
+    workflow = Workflow(
+        topic="Topic without evidence", audience="general public", sources=[], claims=[]
+    )
+    orchestrator = Orchestrator()
+
+    for _ in range(4):
+        orchestrator.advance(workflow)
+
+    orchestrator.reject(workflow, reason="Unable to support claims safely", actor_id="reviewer-1")
+
+    assert workflow.stage == WorkflowStage.REJECTED
+    assert workflow.status == WorkflowStatus.REJECTED
+    assert workflow.history[-1].action == "human_reject"
+    assert workflow.history[-1].note == "Unable to support claims safely"
+    assert workflow.history[-1].actor_id == "reviewer-1"
+
+
 def test_human_cannot_approve_early() -> None:
     with pytest.raises(InvalidTransitionError, match="only allowed after production"):
         Orchestrator().approve(valid_workflow(), actor_id="reviewer-1")
+
+
+def test_human_cannot_reject_before_production_or_revision() -> None:
+    with pytest.raises(InvalidTransitionError, match="only allowed after production"):
+        Orchestrator().reject(valid_workflow(), reason="Not ready", actor_id="reviewer-1")
 
 
 def test_completed_workflow_cannot_advance() -> None:

@@ -80,12 +80,23 @@ class EvidenceCatalog:
         latest: dict[str, EvidenceDocument] = {}
         for item in eligible:
             previous = latest.get(item.source_id)
-            if previous is None or (item.effective_on, item.version_id) > (
-                previous.effective_on,
-                previous.version_id,
-            ):
+            if previous is None or self._is_newer_version(item, previous):
                 latest[item.source_id] = item
         return list(latest.values())
+
+    @staticmethod
+    def _is_newer_version(candidate: EvidenceDocument, current: EvidenceDocument) -> bool:
+        candidate_key = (
+            candidate.effective_on,
+            candidate.published_on,
+            candidate.retrieved_at,
+        )
+        current_key = (
+            current.effective_on,
+            current.published_on,
+            current.retrieved_at,
+        )
+        return candidate_key >= current_key
 
     @staticmethod
     def _validate(document: EvidenceDocument) -> None:
