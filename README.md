@@ -15,6 +15,7 @@ Private, evidence-oriented content operations foundation for Metabolic Health Ac
 - SQL persistence with optimistic locking and append-only application audit events
 - Provider-independent AI request/response contracts
 - Bounded AI gateway with deterministic mock provider for testing
+- Version-aware in-memory evidence catalog for allowlisted authoritative sources
 
 ## V1 workflow architecture
 

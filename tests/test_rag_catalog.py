@@ -2,6 +2,7 @@ from datetime import UTC, date, datetime
 from hashlib import sha256
 
 import pytest
+from pydantic import ValidationError
 
 from content_os.rag.catalog import EvidenceCatalog, EvidenceIngestionError
 from content_os.rag.models import EvidenceDocument
@@ -169,4 +170,24 @@ def test_ingestion_rejects_effective_date_before_publication() -> None:
                     published_on=date(2026, 2, 1),
                 )
             ]
+        )
+
+
+def test_retrieved_documents_are_immutable() -> None:
+    catalog = EvidenceCatalog()
+    catalog.ingest([document("2026-01", date(2026, 1, 1), "Evidence text.")])
+
+    hit = catalog.retrieve("evidence", as_of=date(2026, 6, 1))[0]
+
+    with pytest.raises(ValidationError, match="Instance is frozen"):
+        hit.document.title = "Modified title"  # type: ignore[misc]
+
+
+def test_document_requires_timezone_aware_retrieval_timestamp() -> None:
+    with pytest.raises(ValidationError, match="retrieved_at must be timezone-aware"):
+        document(
+            "naive-retrieved-at",
+            date(2026, 1, 1),
+            "Evidence text.",
+            retrieved_at=datetime(2026, 9, 10),
         )
