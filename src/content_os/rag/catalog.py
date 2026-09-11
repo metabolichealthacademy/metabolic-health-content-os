@@ -1,7 +1,7 @@
 """Allowlisted ingestion and deterministic, version-aware lexical retrieval."""
 
 from collections.abc import Iterable
-from datetime import date
+from datetime import UTC, date, datetime
 from hashlib import sha256
 from urllib.parse import urlparse
 
@@ -80,12 +80,25 @@ class EvidenceCatalog:
         latest: dict[str, EvidenceDocument] = {}
         for item in eligible:
             previous = latest.get(item.source_id)
-            if previous is None or (item.effective_on, item.version_id) > (
-                previous.effective_on,
-                previous.version_id,
-            ):
+            if previous is None or self._is_newer_version(item, previous):
                 latest[item.source_id] = item
         return list(latest.values())
+
+    @staticmethod
+    def _is_newer_version(candidate: EvidenceDocument, current: EvidenceDocument) -> bool:
+        candidate_key = (
+            candidate.effective_on,
+            candidate.published_on or date.min,
+            candidate.retrieved_at or datetime.min.replace(tzinfo=UTC),
+            candidate.version_id,
+        )
+        current_key = (
+            current.effective_on,
+            current.published_on or date.min,
+            current.retrieved_at or datetime.min.replace(tzinfo=UTC),
+            current.version_id,
+        )
+        return candidate_key > current_key
 
     @staticmethod
     def _validate(document: EvidenceDocument) -> None:

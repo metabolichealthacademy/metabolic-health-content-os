@@ -46,6 +46,58 @@ def test_retrieval_selects_version_current_at_as_of_date() -> None:
     assert str(new_hit.document.canonical_url).startswith("https://www.niddk.nih.gov/")
 
 
+def test_retrieval_uses_retrieval_time_for_same_day_versions() -> None:
+    catalog = EvidenceCatalog()
+    shared_effective_on = date(2026, 1, 1)
+    catalog.ingest(
+        [
+            document(
+                "9",
+                shared_effective_on,
+                "Earlier same-day version.",
+                retrieved_at=datetime(2026, 9, 10, 9, 0, tzinfo=UTC),
+            ),
+            document(
+                "10",
+                shared_effective_on,
+                "Later same-day version.",
+                retrieved_at=datetime(2026, 9, 10, 10, 0, tzinfo=UTC),
+            ),
+        ]
+    )
+
+    hit = catalog.retrieve("later", as_of=date(2026, 6, 1))[0]
+
+    assert hit.document.version_id == "10"
+
+
+def test_retrieval_uses_publication_date_before_retrieval_time_for_same_day_versions() -> None:
+    catalog = EvidenceCatalog()
+    shared_effective_on = date(2026, 2, 1)
+    catalog.ingest(
+        [
+            document(
+                "9",
+                shared_effective_on,
+                "Earlier publication version.",
+                published_on=date(2026, 1, 1),
+                retrieved_at=datetime(2026, 9, 10, 11, 0, tzinfo=UTC),
+            ),
+            document(
+                "10",
+                shared_effective_on,
+                "Later publication version.",
+                published_on=date(2026, 2, 1),
+                retrieved_at=datetime(2026, 9, 10, 10, 0, tzinfo=UTC),
+            ),
+        ]
+    )
+
+    hit = catalog.retrieve("later publication", as_of=date(2026, 6, 1))[0]
+
+    assert hit.document.version_id == "10"
+
+
 def test_ingestion_is_allowlisted_hash_verified_and_append_only() -> None:
     catalog = EvidenceCatalog()
     valid = document("2026-01", date(2026, 1, 1), "Prediabetes evidence text.")
