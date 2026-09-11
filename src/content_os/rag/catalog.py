@@ -85,17 +85,25 @@ class EvidenceCatalog:
         return list(latest.values())
 
     @staticmethod
-    def _is_newer_version(candidate: EvidenceDocument, current: EvidenceDocument) -> bool:
+    def _normalized_retrieved_at(value: datetime | None) -> datetime:
+        if value is None:
+            return datetime.min.replace(tzinfo=UTC)
+        if value.tzinfo is None or value.utcoffset() is None:
+            return value.replace(tzinfo=UTC)
+        return value.astimezone(UTC)
+
+    @classmethod
+    def _is_newer_version(cls, candidate: EvidenceDocument, current: EvidenceDocument) -> bool:
         candidate_key = (
             candidate.effective_on,
             candidate.published_on or date.min,
-            candidate.retrieved_at or datetime.min.replace(tzinfo=UTC),
+            cls._normalized_retrieved_at(candidate.retrieved_at),
             candidate.version_id,
         )
         current_key = (
             current.effective_on,
             current.published_on or date.min,
-            current.retrieved_at or datetime.min.replace(tzinfo=UTC),
+            cls._normalized_retrieved_at(current.retrieved_at),
             current.version_id,
         )
         return candidate_key > current_key

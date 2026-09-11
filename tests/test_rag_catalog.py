@@ -98,6 +98,56 @@ def test_retrieval_uses_publication_date_before_retrieval_time_for_same_day_vers
     assert hit.document.version_id == "10"
 
 
+def test_retrieval_normalizes_mixed_awareness_timestamps_to_utc() -> None:
+    catalog = EvidenceCatalog()
+    shared_effective_on = date(2026, 3, 1)
+    catalog.ingest(
+        [
+            document(
+                "aware-earlier",
+                shared_effective_on,
+                "Earlier aware retrieval.",
+                retrieved_at=datetime(2026, 9, 10, 9, 0, tzinfo=UTC),
+            ),
+            document(
+                "naive-later",
+                shared_effective_on,
+                "Later naive retrieval.",
+                retrieved_at=datetime(2026, 9, 10, 10, 0),
+            ),
+        ]
+    )
+
+    hit = catalog.retrieve("later naive", as_of=date(2026, 6, 1))[0]
+
+    assert hit.document.version_id == "naive-later"
+
+
+def test_retrieval_uses_version_id_when_all_metadata_ties() -> None:
+    catalog = EvidenceCatalog()
+    shared_effective_on = date(2026, 4, 1)
+    shared_retrieved_at = datetime(2026, 9, 10, 10, 0, tzinfo=UTC)
+    catalog.ingest(
+        [
+            document(
+                "revision-a",
+                shared_effective_on,
+                "Lexically earlier version.",
+                retrieved_at=shared_retrieved_at,
+            ),
+            document(
+                "revision-b",
+                shared_effective_on,
+                "Lexically later version.",
+                retrieved_at=shared_retrieved_at,
+            ),
+        ]
+    )
+
+    hit = catalog.retrieve("lexically later", as_of=date(2026, 6, 1))[0]
+
+    assert hit.document.version_id == "revision-b"
+
 def test_ingestion_is_allowlisted_hash_verified_and_append_only() -> None:
     catalog = EvidenceCatalog()
     valid = document("2026-01", date(2026, 1, 1), "Prediabetes evidence text.")
