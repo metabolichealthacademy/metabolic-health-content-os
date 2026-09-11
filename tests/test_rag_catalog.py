@@ -98,7 +98,6 @@ def test_retrieval_uses_publication_date_before_retrieval_time_for_same_day_vers
     assert hit.document.version_id == "10"
 
 
-
 def test_retrieval_normalizes_mixed_awareness_timestamps_to_utc() -> None:
     catalog = EvidenceCatalog()
     shared_effective_on = date(2026, 3, 1)
