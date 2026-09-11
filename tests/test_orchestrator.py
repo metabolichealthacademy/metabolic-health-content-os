@@ -92,6 +92,15 @@ def test_human_cannot_reject_before_production_or_revision() -> None:
         Orchestrator().reject(valid_workflow(), reason="Not ready", actor_id="reviewer-1")
 
 
+
+def test_human_cannot_reject_from_unsupported_revision_state() -> None:
+    workflow = valid_workflow()
+    workflow.stage = WorkflowStage.SAFETY
+    workflow.status = WorkflowStatus.REVISION_REQUIRED
+
+    with pytest.raises(InvalidTransitionError, match="only allowed after production"):
+        Orchestrator().reject(workflow, reason="Not ready", actor_id="reviewer-1")
+
 def test_completed_workflow_cannot_advance() -> None:
     workflow = valid_workflow()
     workflow.stage = WorkflowStage.COMPLETED
