@@ -1,4 +1,4 @@
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta, timezone
 from hashlib import sha256
 
 import pytest
@@ -107,7 +107,7 @@ def test_retrieval_normalizes_mixed_awareness_timestamps_to_utc() -> None:
                 "aware-earlier",
                 shared_effective_on,
                 "Earlier aware retrieval.",
-                retrieved_at=datetime(2026, 9, 10, 9, 0, tzinfo=UTC),
+                retrieved_at=datetime(2026, 9, 10, 10, 0, tzinfo=timezone(timedelta(hours=2))),
             ),
             document(
                 "naive-later",
@@ -147,6 +147,7 @@ def test_retrieval_uses_version_id_when_all_metadata_ties() -> None:
     hit = catalog.retrieve("lexically later", as_of=date(2026, 6, 1))[0]
 
     assert hit.document.version_id == "revision-b"
+
 
 def test_ingestion_is_allowlisted_hash_verified_and_append_only() -> None:
     catalog = EvidenceCatalog()
