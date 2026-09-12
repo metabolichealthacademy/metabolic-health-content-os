@@ -14,6 +14,20 @@ class EvidenceIngestionError(ValueError):
     """Raised when a document fails provenance or integrity validation."""
 
 
+def validate_evidence_document(document: EvidenceDocument) -> None:
+    """Apply the shared Task 5A provenance and integrity checks."""
+
+    allowed_hosts = AUTHORIZED_SOURCES.get(document.publisher)
+    host = (urlparse(str(document.canonical_url)).hostname or "").casefold()
+    if allowed_hosts is None or host not in allowed_hosts:
+        raise EvidenceIngestionError("Publisher and canonical URL are not allowlisted")
+    digest = sha256(document.text.encode()).hexdigest()
+    if digest != document.content_sha256:
+        raise EvidenceIngestionError("Content hash does not match document text")
+    if document.effective_on < document.published_on:
+        raise EvidenceIngestionError("effective_on cannot precede published_on")
+
+
 class EvidenceCatalog:
     """Immutable-version catalog used before vector storage or live fetching exists.
 
@@ -31,7 +45,7 @@ class EvidenceCatalog:
 
     def ingest(self, documents: Iterable[EvidenceDocument]) -> None:
         for document in documents:
-            self._validate(document)
+            validate_evidence_document(document)
             key = (document.source_id, document.version_id)
             if key in self._documents:
                 raise EvidenceIngestionError(f"Duplicate immutable version: {key}")
@@ -51,11 +65,9 @@ class EvidenceCatalog:
             raise ValueError("query must not be empty")
         if limit < 1:
             raise ValueError("limit must be at least 1")
-
-        current = self._current_versions(as_of)
         terms = sorted(set(query.casefold().split()))
-        hits: list[RetrievalHit] = []
-        for document in current:
+        hits = []
+        for document in self._current_versions(as_of):
             haystack = f"{document.title} {document.text}".casefold()
             matched = [term for term in terms if term in haystack]
             if matched:
@@ -107,15 +119,3 @@ class EvidenceCatalog:
             current.version_id,
         )
         return candidate_key > current_key
-
-    @staticmethod
-    def _validate(document: EvidenceDocument) -> None:
-        allowed_hosts = AUTHORIZED_SOURCES.get(document.publisher)
-        host = (urlparse(str(document.canonical_url)).hostname or "").casefold()
-        if allowed_hosts is None or host not in allowed_hosts:
-            raise EvidenceIngestionError("Publisher and canonical URL are not allowlisted")
-        digest = sha256(document.text.encode()).hexdigest()
-        if digest != document.content_sha256:
-            raise EvidenceIngestionError("Content hash does not match document text")
-        if document.effective_on < document.published_on:
-            raise EvidenceIngestionError("effective_on cannot precede published_on")
