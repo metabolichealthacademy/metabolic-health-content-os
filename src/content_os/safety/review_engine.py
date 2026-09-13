@@ -14,7 +14,10 @@ _PERSONALIZED_INSTRUCTION = re.compile(
 )
 _MEDICATION_DOSE_INSTRUCTION = re.compile(
     r"\b(?:start|stop|take|increase|decrease|change|raise|lower)\b"
-    r"[^.\n]{0,60}\b\d+(?:\.\d+)?\s*(?:mcg|mg|g|ml|units?)\b",
+    r"[^.\n]{0,60}\b(?:"
+    r"\d+(?:\.\d+)?\s*(?:mcg|mg|g|ml|units?)"
+    r"|insulin|metformin|medication|medicine|drug|dose"
+    r")\b",
     re.IGNORECASE,
 )
 _ABSOLUTE_CLAIM = re.compile(
