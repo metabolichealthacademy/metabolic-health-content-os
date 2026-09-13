@@ -46,7 +46,8 @@ class SafetyFinding(BaseModel):
                 normalized["category"] = "medical_safety"
             else:
                 raise ValueError(
-                    f"Legacy safety finding with unknown code {code!r} must include category"
+                    f"Legacy safety finding with unknown code {code!r} must include category; "
+                    "ruleset_version will default to 'legacy' when omitted"
                 )
         normalized.setdefault("ruleset_version", "legacy")
         return normalized
