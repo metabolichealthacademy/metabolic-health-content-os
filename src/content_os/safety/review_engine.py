@@ -48,7 +48,16 @@ class MedicalEditorialReviewEngine:
         }
         review_text = f"{draft.title}\n{draft.body}"
 
-        if not draft.body.strip() or not supported_source_ids:
+        if not draft.body.strip():
+            findings.append(
+                self._finding(
+                    "evidence",
+                    "blocking",
+                    "no_supported_claims",
+                    "Draft body is empty.",
+                )
+            )
+        elif not supported_source_ids:
             findings.append(
                 self._finding(
                     "evidence",
