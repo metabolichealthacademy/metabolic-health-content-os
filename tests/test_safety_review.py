@@ -110,6 +110,16 @@ def test_medication_initiation_or_dose_change_without_numeric_amount_is_blocking
     assert "medication_dose_instruction" in finding_codes(review)
 
 
+def test_non_instructional_medication_sentence_is_not_flagged() -> None:
+    review = MedicalEditorialReviewEngine().review(
+        draft(body="We should increase awareness of medication safety in communities."),
+        evidence("nih-1"),
+    )
+
+    assert review.approved is True
+    assert "medication_dose_instruction" not in finding_codes(review)
+
+
 def test_absolute_cure_and_clarity_language_produce_warnings_only() -> None:
     long_sentence = " ".join(["word"] * 41) + "."
     review = MedicalEditorialReviewEngine().review(
