@@ -4,6 +4,18 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+_LEGACY_FINDING_CATEGORIES = {
+    "no_supported_claims": "evidence",
+    "missing_citations": "evidence",
+    "unsupported_source_reference": "evidence",
+    "absolute_medical_claim": "editorial",
+    "cure_or_guarantee_language": "editorial",
+    "editorial_clarity": "editorial",
+    "missing_disclaimer": "medical_safety",
+    "personalized_medical_instruction": "medical_safety",
+    "medication_dose_instruction": "medical_safety",
+}
+
 
 class ContentDraft(BaseModel):
     title: str
@@ -30,25 +42,14 @@ class SafetyFinding(BaseModel):
         normalized = dict(value)
         if "category" not in normalized:
             code = str(normalized.get("code", ""))
-            if code in {"no_supported_claims", "missing_citations", "unsupported_source_reference"}:
-                normalized["category"] = "evidence"
-            elif code in {
-                "absolute_medical_claim",
-                "cure_or_guarantee_language",
-                "editorial_clarity",
-            }:
-                normalized["category"] = "editorial"
-            elif code in {
-                "missing_disclaimer",
-                "personalized_medical_instruction",
-                "medication_dose_instruction",
-            }:
-                normalized["category"] = "medical_safety"
-            else:
+            category = _LEGACY_FINDING_CATEGORIES.get(code)
+            if category is None:
                 raise ValueError(
                     f"Legacy safety finding with unknown code {code!r} must include category; "
+                    "valid categories are medical_safety, evidence, or editorial. "
                     "ruleset_version will default to 'legacy' when omitted"
                 )
+            normalized["category"] = category
         normalized.setdefault("ruleset_version", "legacy")
         return normalized
 

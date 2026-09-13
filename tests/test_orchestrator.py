@@ -141,3 +141,20 @@ def test_production_accepts_legacy_safety_artifact_without_finding_category_fiel
 
     assert workflow.stage == WorkflowStage.HUMAN_REVIEW
     assert workflow.status == WorkflowStatus.AWAITING_HUMAN
+
+
+def test_legacy_safety_finding_with_unknown_code_requires_category() -> None:
+    with pytest.raises(ValueError, match="must include category"):
+        SafetyReview.model_validate(
+            {
+                "approved": False,
+                "ruleset_version": "task-6a-v0",
+                "findings": [
+                    {
+                        "severity": "blocking",
+                        "code": "legacy_unknown_code",
+                        "message": "Legacy finding without category metadata.",
+                    }
+                ],
+            }
+        )
