@@ -15,7 +15,7 @@ _PERSONALIZED_INSTRUCTION = re.compile(
 _MEDICATION_DOSE_INSTRUCTION = re.compile(
     r"\b(?:"
     r"(?:start|stop|take|increase|decrease|change|raise|lower)\b"
-    r"[^.\n]{0,60}\b\d+(?:\.\d+)?\s*(?:mcg|mg|g|ml|units?)"
+    r"[^.\n]{0,60}\b\d+(?:\.\d+)?\s*(?:mcg|mg|g|ml|units?)\b"
     r"|(?:start|stop|take)\b[^.\n]{0,40}\b(?:insulin|metformin)\b"
     r"|(?:increase|decrease|change|raise|lower)\b[^.\n]{0,40}\b(?:insulin|metformin|dose|dosage)\b"
     r")",
