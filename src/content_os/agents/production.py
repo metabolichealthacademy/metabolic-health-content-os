@@ -27,21 +27,38 @@ def _load_safety_review(artifact: object) -> SafetyReview:
     if not isinstance(findings, list):
         return SafetyReview.model_validate(review)
 
-    if not any(_is_legacy_safety_finding(finding) for finding in findings):
+    if not any(_is_missing_safety_metadata(finding) for finding in findings):
+        return SafetyReview.model_validate(review)
+
+    if not all(
+        _is_legacy_safety_finding(finding) or not _is_missing_safety_metadata(finding)
+        for finding in findings
+    ):
         return SafetyReview.model_validate(review)
 
     ruleset_version = review.get("ruleset_version") or "legacy"
     review["ruleset_version"] = ruleset_version
-    review["findings"] = [_load_safety_finding(finding, ruleset_version) for finding in findings]
+    review["findings"] = [
+        (
+            _load_safety_finding(finding, ruleset_version)
+            if _is_legacy_safety_finding(finding)
+            else finding
+        )
+        for finding in findings
+    ]
     return SafetyReview.model_validate(review)
 
 
-def _is_legacy_safety_finding(artifact: object) -> bool:
+def _is_missing_safety_metadata(artifact: object) -> bool:
     return isinstance(artifact, dict) and (
-        artifact.get("category") is None
-        and artifact.get("ruleset_version") is None
-        and artifact.get("code") in _LEGACY_FINDING_CATEGORIES
+        artifact.get("category") is None or artifact.get("ruleset_version") is None
     )
+
+
+def _is_legacy_safety_finding(artifact: object) -> bool:
+    return _is_missing_safety_metadata(artifact) and artifact.get("category") is None and (
+        artifact.get("ruleset_version") is None
+    ) and artifact.get("code") in _LEGACY_FINDING_CATEGORIES
 
 
 def _load_safety_finding(artifact: object, ruleset_version: str) -> object:
