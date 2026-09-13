@@ -101,7 +101,7 @@ def test_human_cannot_reject_from_unsupported_revision_state() -> None:
         Orchestrator().reject(workflow, reason="Not ready", actor_id="reviewer-1")
 
 
-def test_legacy_safety_artifact_can_advance_from_production() -> None:
+def test_legacy_safety_artifact_without_metadata_can_advance_from_production() -> None:
     workflow = valid_workflow()
     workflow.stage = WorkflowStage.PRODUCTION
     workflow.artifacts["content"] = {
@@ -122,6 +122,10 @@ def test_legacy_safety_artifact_can_advance_from_production() -> None:
             }
         ],
     }
+
+    assert "ruleset_version" not in workflow.artifacts["safety"]
+    assert "category" not in workflow.artifacts["safety"]["findings"][0]
+    assert "ruleset_version" not in workflow.artifacts["safety"]["findings"][0]
 
     Orchestrator().advance(workflow)
 
