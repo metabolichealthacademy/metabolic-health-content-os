@@ -14,14 +14,18 @@ class ContentDraft(BaseModel):
 
 
 class SafetyFinding(BaseModel):
+    category: Literal["medical_safety", "evidence", "editorial"]
     severity: Literal["info", "warning", "blocking"]
     code: str
     message: str
+    matched_text: str | None = None
+    ruleset_version: str
 
 
 class SafetyReview(BaseModel):
     approved: bool
     findings: list[SafetyFinding]
+    ruleset_version: str
 
 
 class ProductionPackage(BaseModel):
