@@ -143,6 +143,25 @@ def test_non_empty_draft_with_no_structurally_supported_claims_is_blocking() -> 
     assert finding_codes(review) == ["no_supported_claims", "unsupported_source_reference"]
 
 
+def test_unrelated_supported_evidence_still_blocks_no_supported_claims() -> None:
+    review = MedicalEditorialReviewEngine().review(
+        draft(body="Educational claim text with citation [nih-1].", source_ids=["nih-1"]),
+        EvidenceOutput(
+            claims=[
+                ApprovedClaim(
+                    text="Different supported claim.",
+                    source_ids=["nih-2"],
+                    structurally_supported=True,
+                )
+            ],
+            limitations=["Support exists only for a different source."],
+        ),
+    )
+
+    assert review.approved is False
+    assert finding_codes(review) == ["no_supported_claims", "unsupported_source_reference"]
+
+
 def test_absolute_cure_and_clarity_language_produce_warnings_only() -> None:
     long_sentence = " ".join(["word"] * 41) + "."
     review = MedicalEditorialReviewEngine().review(
