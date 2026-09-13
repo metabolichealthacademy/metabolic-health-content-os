@@ -1,6 +1,5 @@
 import pytest
 
-from content_os.agents.production import ProductionAgent
 from content_os.models.evidence import ClaimCandidate, SourceCandidate
 from content_os.models.workflow import Workflow, WorkflowStage, WorkflowStatus
 from content_os.orchestration.orchestrator import InvalidTransitionError, Orchestrator
@@ -132,51 +131,22 @@ def test_production_accepts_legacy_safety_findings() -> None:
     assert workflow.artifacts["production"]["publish_ready"] is False
 
 
-def test_production_backfills_finding_ruleset_from_review() -> None:
-    artifact = {
+def test_production_accepts_review_ruleset_backfill_for_findings() -> None:
+    workflow = valid_workflow()
+    workflow.stage = WorkflowStage.PRODUCTION
+    workflow.status = WorkflowStatus.ACTIVE
+    workflow.artifacts["content"] = {
+        "title": "Insulin resistance overview",
+        "audience": "general public",
+        "body": "Insulin resistance can precede type 2 diabetes.",
+        "cited_source_ids": ["nih-1"],
+        "disclaimer": "Educational content only.",
+    }
+    workflow.artifacts["safety"] = {
         "approved": True,
         "ruleset_version": "2026.09",
         "findings": [
             {
-                "severity": "warning",
-                "code": "medication_instruction",
-                "message": "Avoid medication-specific treatment instructions.",
-                "matched_text": "Start metformin 500 mg tonight.",
-            }
-        ],
-    }
-
-    normalized = ProductionAgent()._with_legacy_safety_defaults(artifact)
-
-    assert normalized["findings"][0]["ruleset_version"] == "2026.09"
-
-
-def test_production_preserves_blank_review_ruleset_without_finding_backfill() -> None:
-    artifact = {
-        "approved": True,
-        "ruleset_version": "",
-        "findings": [
-            {
-                "category": "medical_safety",
-                "severity": "warning",
-                "code": "medication_instruction",
-                "message": "Avoid medication-specific treatment instructions.",
-                "ruleset_version": "2026.09",
-            }
-        ],
-    }
-
-    normalized = ProductionAgent()._with_legacy_safety_defaults(artifact)
-
-    assert normalized is artifact
-
-
-def test_production_backfills_blank_review_ruleset_when_finding_is_missing_it() -> None:
-    artifact = {
-        "approved": True,
-        "ruleset_version": "",
-        "findings": [
-            {
                 "category": "medical_safety",
                 "severity": "warning",
                 "code": "medication_instruction",
@@ -185,10 +155,11 @@ def test_production_backfills_blank_review_ruleset_when_finding_is_missing_it() 
         ],
     }
 
-    normalized = ProductionAgent()._with_legacy_safety_defaults(artifact)
+    Orchestrator().advance(workflow)
 
-    assert normalized["ruleset_version"] == "1.0.0"
-    assert normalized["findings"][0]["ruleset_version"] == "1.0.0"
+    assert workflow.stage == WorkflowStage.HUMAN_REVIEW
+    assert workflow.status == WorkflowStatus.AWAITING_HUMAN
+    assert workflow.artifacts["production"]["publish_ready"] is False
 
 
 def test_completed_workflow_cannot_advance() -> None:
