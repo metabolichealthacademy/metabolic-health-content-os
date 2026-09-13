@@ -120,6 +120,16 @@ def test_non_instructional_medication_sentence_is_not_flagged() -> None:
     assert "medication_dose_instruction" not in finding_codes(review)
 
 
+def test_generic_medication_initiation_wording_without_specific_treatment_is_not_flagged() -> None:
+    review = MedicalEditorialReviewEngine().review(
+        draft(body="Start medication only after speaking with your clinician."),
+        evidence("nih-1"),
+    )
+
+    assert review.approved is True
+    assert "medication_dose_instruction" not in finding_codes(review)
+
+
 def test_absolute_cure_and_clarity_language_produce_warnings_only() -> None:
     long_sentence = " ".join(["word"] * 41) + "."
     review = MedicalEditorialReviewEngine().review(
