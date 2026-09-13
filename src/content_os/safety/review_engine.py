@@ -17,6 +17,11 @@ _MEDICATION_DOSE_INSTRUCTION = re.compile(
     r"[^.\n]{0,60}\b\d+(?:\.\d+)?\s*(?:mcg|mg|g|ml|units?)\b",
     re.IGNORECASE,
 )
+_MEDICATION_TREATMENT_INSTRUCTION = re.compile(
+    r"\b(?:start|stop|take|increase|decrease|change|raise|lower)\b"
+    r"[^.\n]{0,60}\b(?:medication|medicine|drug|insulin|metformin|dose|dosage|prescription)\b",
+    re.IGNORECASE,
+)
 _ABSOLUTE_CLAIM = re.compile(
     r"\b(?:always|never|completely prevents?|eliminates? the risk)\b",
     re.IGNORECASE,
@@ -33,6 +38,7 @@ class MedicalEditorialReviewEngine:
 
     def review(self, draft: ContentDraft, evidence: EvidenceOutput) -> SafetyReview:
         findings: list[SafetyFinding] = []
+        scan_text = f"{draft.title}\n{draft.body}"
         supported_source_ids = {
             source_id
             for claim in evidence.claims
@@ -40,7 +46,7 @@ class MedicalEditorialReviewEngine:
             for source_id in claim.source_ids
         }
 
-        if not draft.body.strip():
+        if not draft.body.strip() or not supported_source_ids:
             findings.append(
                 self._finding(
                     "evidence",
@@ -83,7 +89,7 @@ class MedicalEditorialReviewEngine:
 
         self._append_pattern_finding(
             findings,
-            draft.body,
+            scan_text,
             _PERSONALIZED_INSTRUCTION,
             "medical_safety",
             "blocking",
@@ -92,7 +98,7 @@ class MedicalEditorialReviewEngine:
         )
         self._append_pattern_finding(
             findings,
-            draft.body,
+            scan_text,
             _MEDICATION_DOSE_INSTRUCTION,
             "medical_safety",
             "blocking",
@@ -101,7 +107,16 @@ class MedicalEditorialReviewEngine:
         )
         self._append_pattern_finding(
             findings,
-            draft.body,
+            scan_text,
+            _MEDICATION_TREATMENT_INSTRUCTION,
+            "medical_safety",
+            "blocking",
+            "medication_dose_instruction",
+            "Medication initiation or dose-change instructions are not permitted.",
+        )
+        self._append_pattern_finding(
+            findings,
+            scan_text,
             _ABSOLUTE_CLAIM,
             "editorial",
             "warning",
@@ -110,7 +125,7 @@ class MedicalEditorialReviewEngine:
         )
         self._append_pattern_finding(
             findings,
-            draft.body,
+            scan_text,
             _CURE_OR_GUARANTEE,
             "editorial",
             "warning",
@@ -121,7 +136,7 @@ class MedicalEditorialReviewEngine:
         unclear_sentence = next(
             (
                 sentence.strip()
-                for sentence in _SENTENCE.findall(draft.body)
+                for sentence in _SENTENCE.findall(scan_text)
                 if len(sentence.split()) > 40
             ),
             None,
@@ -170,6 +185,8 @@ class MedicalEditorialReviewEngine:
         code: str,
         message: str,
     ) -> None:
+        if any(existing.code == code for existing in findings):
+            return
         match = pattern.search(body)
         if match:
             findings.append(

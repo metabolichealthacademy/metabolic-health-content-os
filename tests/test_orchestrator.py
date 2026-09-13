@@ -1,5 +1,7 @@
 import pytest
 
+from content_os.agents.production import ProductionAgent
+from content_os.models.content import ContentDraft
 from content_os.models.evidence import ClaimCandidate, SourceCandidate
 from content_os.models.workflow import Workflow, WorkflowStage, WorkflowStatus
 from content_os.orchestration.orchestrator import InvalidTransitionError, Orchestrator
@@ -99,6 +101,34 @@ def test_human_cannot_reject_from_unsupported_revision_state() -> None:
 
     with pytest.raises(InvalidTransitionError, match="only allowed after production"):
         Orchestrator().reject(workflow, reason="Not ready", actor_id="reviewer-1")
+
+
+def test_production_agent_accepts_legacy_safety_artifacts() -> None:
+    workflow = valid_workflow()
+    workflow.stage = WorkflowStage.PRODUCTION
+    workflow.artifacts["content"] = ContentDraft(
+        title="Educational topic",
+        audience="general public",
+        body="Supported educational claim [nih-1].",
+        cited_source_ids=["nih-1"],
+        disclaimer="Educational information only; not medical advice.",
+    ).model_dump(mode="json")
+    workflow.artifacts["safety"] = {
+        "approved": True,
+        "findings": [
+            {
+                "severity": "warning",
+                "code": "legacy_warning",
+                "message": "Legacy finding payload.",
+            }
+        ],
+    }
+
+    package = ProductionAgent().run(workflow)
+
+    assert package.title == "Educational topic"
+    assert package.source_ids == ["nih-1"]
+
 
 def test_completed_workflow_cannot_advance() -> None:
     workflow = valid_workflow()

@@ -9,7 +9,13 @@ class ProductionAgent(BaseAgent):
     stage = WorkflowStage.PRODUCTION
 
     def run(self, workflow: Workflow) -> ProductionPackage:
-        review = SafetyReview.model_validate(self.require_artifact(workflow, "safety"))
+        raw_review = self.require_artifact(workflow, "safety")
+        for finding in raw_review.get("findings", []):
+            finding.setdefault("category", "medical_safety")
+            finding.setdefault("ruleset_version", "legacy")
+        raw_review.setdefault("ruleset_version", "legacy")
+
+        review = SafetyReview.model_validate(raw_review)
         if not review.approved:
             raise ValueError("Production requires safety approval")
         draft = ContentDraft.model_validate(self.require_artifact(workflow, "content"))
