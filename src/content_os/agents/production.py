@@ -19,6 +19,7 @@ class ProductionAgent(BaseAgent):
             return artifact
 
         review_ruleset_version = artifact.get("ruleset_version")
+        review_ruleset_is_string = isinstance(review_ruleset_version, str)
         has_review_ruleset_version = (
             isinstance(review_ruleset_version, str) and bool(review_ruleset_version.strip())
         )
@@ -27,9 +28,9 @@ class ProductionAgent(BaseAgent):
             if has_review_ruleset_version
             else LEGACY_SAFETY_RULESET_VERSION
         )
-        should_backfill_review_ruleset = not isinstance(review_ruleset_version, str)
 
         changed = False
+        missing_finding_ruleset_version = False
         normalized_findings: list[Any] = []
         for finding in findings:
             if not isinstance(finding, dict):
@@ -45,8 +46,14 @@ class ProductionAgent(BaseAgent):
                     **normalized_finding,
                     "ruleset_version": default_ruleset_version,
                 }
+                missing_finding_ruleset_version = True
                 changed = True
             normalized_findings.append(normalized_finding)
+
+        should_backfill_review_ruleset = (
+            not review_ruleset_is_string
+            or (not has_review_ruleset_version and missing_finding_ruleset_version)
+        )
 
         if not changed:
             if not should_backfill_review_ruleset:
