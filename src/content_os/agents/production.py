@@ -3,7 +3,6 @@
 from content_os.agents.base import BaseAgent
 from content_os.models.content import ContentDraft, ProductionPackage, SafetyReview
 from content_os.models.workflow import Workflow, WorkflowStage
-from content_os.safety import SAFETY_RULESET_VERSION
 
 _LEGACY_FINDING_CATEGORIES = {
     "no_supported_claims": "evidence",
@@ -36,8 +35,9 @@ def _load_safety_review(artifact: object) -> SafetyReview:
     ):
         return SafetyReview.model_validate(review)
 
-    ruleset_version = review.get("ruleset_version") or "legacy"
-    review["ruleset_version"] = ruleset_version
+    if "ruleset_version" not in review:
+        review["ruleset_version"] = "legacy"
+    ruleset_version = review["ruleset_version"]
     review["findings"] = [
         (
             _load_safety_finding(finding, ruleset_version)
@@ -74,7 +74,7 @@ def _load_safety_finding(artifact: object, ruleset_version: str) -> object:
         inferred = _LEGACY_FINDING_CATEGORIES.get(finding.get("code"))
         if inferred is not None:
             finding["category"] = inferred
-    finding.setdefault("ruleset_version", ruleset_version or SAFETY_RULESET_VERSION)
+    finding.setdefault("ruleset_version", ruleset_version)
     return finding
 
 
