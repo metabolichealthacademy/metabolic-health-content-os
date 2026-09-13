@@ -51,7 +51,7 @@ def _load_safety_review(artifact: object) -> SafetyReview:
 
 def _is_missing_safety_metadata(artifact: object) -> bool:
     return isinstance(artifact, dict) and (
-        "category" not in artifact or "ruleset_version" not in artifact
+        "category" not in artifact and "ruleset_version" not in artifact
     )
 
 
