@@ -12,11 +12,17 @@ _PERSONALIZED_INSTRUCTION = re.compile(
     r"you should\s+(?:start|stop|take|avoid|increase|decrease|change))\b",
     re.IGNORECASE,
 )
+_MEDICATION_NAME = (
+    r"[a-z]{3,}(?:mab|pril|sartan|statin|formin|profen|mycin|zole|navir|caine|"
+    r"oxetine|olol|azole|xaban)"
+)
+_MEDICATION_CONTEXT = rf"(?:medication|medicine|drug|insulin|aspirin|{_MEDICATION_NAME})"
 _MEDICATION_DOSE_INSTRUCTION = re.compile(
     r"\b(?:start|stop|take|increase|decrease|change|raise|lower)\b"
-    r"[^.\n]{0,60}\b(?:"
+    rf"[^.\n]{{0,60}}\b(?:"
     r"\d+(?:\.\d+)?\s*(?:mcg|mg|g|ml|units?)"
-    r"|insulin|metformin|medication|medicine|drug|dose"
+    rf"|{_MEDICATION_CONTEXT}(?:\s+dose)?"
+    rf"|dose\s+of\s+{_MEDICATION_CONTEXT}"
     r")\b",
     re.IGNORECASE,
 )

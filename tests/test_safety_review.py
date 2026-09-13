@@ -122,6 +122,35 @@ def test_medication_dose_change_without_numeric_dose_is_blocking() -> None:
     assert review.findings[0].matched_text == "Increase your insulin dose"
 
 
+def test_medication_name_instruction_without_numeric_dose_is_blocking() -> None:
+    ibuprofen_review = MedicalEditorialReviewEngine().review(
+        draft(body="Start ibuprofen tonight."),
+        evidence("nih-1"),
+    )
+    atorvastatin_review = MedicalEditorialReviewEngine().review(
+        draft(body="Increase atorvastatin this week."),
+        evidence("nih-1"),
+    )
+
+    assert ibuprofen_review.approved is False
+    assert finding_codes(ibuprofen_review) == ["medication_dose_instruction"]
+    assert ibuprofen_review.findings[0].matched_text == "Start ibuprofen"
+
+    assert atorvastatin_review.approved is False
+    assert finding_codes(atorvastatin_review) == ["medication_dose_instruction"]
+    assert atorvastatin_review.findings[0].matched_text == "Increase atorvastatin"
+
+
+def test_non_medication_dose_language_is_not_blocking() -> None:
+    review = MedicalEditorialReviewEngine().review(
+        draft(body="Increase the dose gradually for this workout plan."),
+        evidence("nih-1"),
+    )
+
+    assert review.approved is True
+    assert finding_codes(review) == []
+
+
 def test_absolute_cure_and_clarity_language_produce_warnings_only() -> None:
     long_sentence = " ".join(["word"] * 41) + "."
     review = MedicalEditorialReviewEngine().review(
