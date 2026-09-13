@@ -16,11 +16,10 @@ class ProductionAgent(BaseAgent):
             return artifact
 
         review_ruleset_version = artifact.get("ruleset_version")
-        default_ruleset_version = (
-            review_ruleset_version if isinstance(review_ruleset_version, str) else "1.0.0"
-        )
+        has_review_ruleset_version = isinstance(review_ruleset_version, str)
+        default_ruleset_version = review_ruleset_version if has_review_ruleset_version else "1.0.0"
 
-        changed = False
+        changed = not has_review_ruleset_version
         normalized_findings: list[Any] = []
         for finding in findings:
             if not isinstance(finding, dict):
@@ -41,7 +40,11 @@ class ProductionAgent(BaseAgent):
 
         if not changed:
             return artifact
-        return {**artifact, "findings": normalized_findings}
+        return {
+            **artifact,
+            "ruleset_version": default_ruleset_version,
+            "findings": normalized_findings,
+        }
 
     def run(self, workflow: Workflow) -> ProductionPackage:
         safety_artifact = self.require_artifact(workflow, "safety")

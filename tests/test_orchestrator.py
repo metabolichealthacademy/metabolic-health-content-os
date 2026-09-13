@@ -114,7 +114,6 @@ def test_production_accepts_legacy_safety_findings() -> None:
     }
     workflow.artifacts["safety"] = {
         "approved": True,
-        "ruleset_version": "1.0.0",
         "findings": [
             {
                 "severity": "warning",
