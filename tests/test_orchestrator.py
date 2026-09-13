@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from content_os.models.evidence import ClaimCandidate, SourceCandidate
 from content_os.models.workflow import Workflow, WorkflowStage, WorkflowStatus
@@ -99,6 +100,128 @@ def test_human_cannot_reject_from_unsupported_revision_state() -> None:
 
     with pytest.raises(InvalidTransitionError, match="only allowed after production"):
         Orchestrator().reject(workflow, reason="Not ready", actor_id="reviewer-1")
+
+
+def test_legacy_safety_finding_metadata_can_advance_from_production() -> None:
+    workflow = valid_workflow()
+    workflow.stage = WorkflowStage.PRODUCTION
+    workflow.artifacts["content"] = {
+        "title": "Educational topic",
+        "audience": "general public",
+        "body": "Supported educational copy.",
+        "cited_source_ids": ["nih-1"],
+        "disclaimer": "Educational information only; not medical advice.",
+    }
+    workflow.artifacts["safety"] = {
+        "approved": True,
+        "ruleset_version": "task-6a-v1",
+        "findings": [
+            {
+                "severity": "warning",
+                "code": "absolute_medical_claim",
+                "message": "Replace absolute medical language with evidence-calibrated wording.",
+                "matched_text": "always",
+            }
+        ],
+    }
+
+    assert "category" not in workflow.artifacts["safety"]["findings"][0]
+    assert "ruleset_version" not in workflow.artifacts["safety"]["findings"][0]
+
+    Orchestrator().advance(workflow)
+
+    assert workflow.stage == WorkflowStage.HUMAN_REVIEW
+    assert workflow.status == WorkflowStatus.AWAITING_HUMAN
+    assert workflow.artifacts["production"]["publish_ready"] is False
+
+
+def test_malformed_current_safety_artifact_still_fails_validation() -> None:
+    workflow = valid_workflow()
+    workflow.stage = WorkflowStage.PRODUCTION
+    workflow.artifacts["content"] = {
+        "title": "Educational topic",
+        "audience": "general public",
+        "body": "Supported educational copy.",
+        "cited_source_ids": ["nih-1"],
+        "disclaimer": "Educational information only; not medical advice.",
+    }
+    workflow.artifacts["safety"] = {
+        "approved": True,
+        "ruleset_version": "task-6a-v1",
+        "findings": [
+            {
+                "category": "editorial",
+                "severity": "warning",
+                "code": "absolute_medical_claim",
+                "message": "Replace absolute medical language with evidence-calibrated wording.",
+                "matched_text": "always",
+            }
+        ],
+    }
+
+    with pytest.raises(ValidationError, match="ruleset_version"):
+        Orchestrator().advance(workflow)
+
+
+def test_mixed_legacy_and_unknown_metadata_missing_findings_fail_validation() -> None:
+    workflow = valid_workflow()
+    workflow.stage = WorkflowStage.PRODUCTION
+    workflow.artifacts["content"] = {
+        "title": "Educational topic",
+        "audience": "general public",
+        "body": "Supported educational copy.",
+        "cited_source_ids": ["nih-1"],
+        "disclaimer": "Educational information only; not medical advice.",
+    }
+    workflow.artifacts["safety"] = {
+        "approved": True,
+        "findings": [
+            {
+                "severity": "warning",
+                "code": "absolute_medical_claim",
+                "message": "Replace absolute medical language with evidence-calibrated wording.",
+                "matched_text": "always",
+            },
+            {
+                "severity": "warning",
+                "code": "unexpected_code",
+                "message": "Unexpected malformed finding.",
+            },
+        ],
+    }
+
+    with pytest.raises(ValidationError, match="category"):
+        Orchestrator().advance(workflow)
+
+
+def test_null_safety_metadata_is_not_treated_as_legacy() -> None:
+    workflow = valid_workflow()
+    workflow.stage = WorkflowStage.PRODUCTION
+    workflow.artifacts["content"] = {
+        "title": "Educational topic",
+        "audience": "general public",
+        "body": "Supported educational copy.",
+        "cited_source_ids": ["nih-1"],
+        "disclaimer": "Educational information only; not medical advice.",
+    }
+    workflow.artifacts["safety"] = {
+        "approved": True,
+        "findings": [
+            {
+                "category": None,
+                "severity": "warning",
+                "code": "absolute_medical_claim",
+                "message": "Replace absolute medical language with evidence-calibrated wording.",
+                "matched_text": "always",
+                "ruleset_version": None,
+            }
+        ],
+        "ruleset_version": "task-6a-v1",
+    }
+
+    with pytest.raises(ValidationError, match="category"):
+        Orchestrator().advance(workflow)
+
 
 def test_completed_workflow_cannot_advance() -> None:
     workflow = valid_workflow()
