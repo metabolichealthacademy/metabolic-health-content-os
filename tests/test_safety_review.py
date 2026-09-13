@@ -100,6 +100,37 @@ def test_medication_dose_instruction_is_blocking() -> None:
     assert review.findings[0].matched_text == "Start metformin 500 mg"
 
 
+def test_medication_initiation_or_dose_change_without_numeric_amount_is_blocking() -> None:
+    review = MedicalEditorialReviewEngine().review(
+        draft(body="Start metformin tonight. Increase your insulin dose."),
+        evidence("nih-1"),
+    )
+
+    assert review.approved is False
+    assert "medication_dose_instruction" in finding_codes(review)
+    assert review.findings[0].matched_text == "Start metformin"
+
+
+def test_non_instructional_medication_sentence_is_not_flagged() -> None:
+    review = MedicalEditorialReviewEngine().review(
+        draft(body="We should increase awareness of medication safety in communities."),
+        evidence("nih-1"),
+    )
+
+    assert review.approved is True
+    assert "medication_dose_instruction" not in finding_codes(review)
+
+
+def test_generic_medication_initiation_wording_without_specific_treatment_is_not_flagged() -> None:
+    review = MedicalEditorialReviewEngine().review(
+        draft(body="Start medication only after speaking with your clinician."),
+        evidence("nih-1"),
+    )
+
+    assert review.approved is True
+    assert "medication_dose_instruction" not in finding_codes(review)
+
+
 def test_absolute_cure_and_clarity_language_produce_warnings_only() -> None:
     long_sentence = " ".join(["word"] * 41) + "."
     review = MedicalEditorialReviewEngine().review(

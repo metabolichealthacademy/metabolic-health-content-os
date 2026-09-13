@@ -6,6 +6,7 @@ from content_os.models.content import ContentDraft, SafetyFinding, SafetyReview
 from content_os.models.evidence import EvidenceOutput
 
 SAFETY_RULESET_VERSION = "task-6a-v1"
+_MEDICATION_NAME = r"(?:insulin|metformin)"
 
 _PERSONALIZED_INSTRUCTION = re.compile(
     r"\b(?:you have|you are diagnosed with|your diagnosis is|"
@@ -13,8 +14,12 @@ _PERSONALIZED_INSTRUCTION = re.compile(
     re.IGNORECASE,
 )
 _MEDICATION_DOSE_INSTRUCTION = re.compile(
-    r"\b(?:start|stop|take|increase|decrease|change|raise|lower)\b"
-    r"[^.\n]{0,60}\b\d+(?:\.\d+)?\s*(?:mcg|mg|g|ml|units?)\b",
+    rf"\b(?:"
+    rf"(?:start|stop|take|increase|decrease|change|raise|lower)\b"
+    rf"[^.\n]{{0,60}}\b\d+(?:\.\d+)?\s*(?:mcg|mg|g|ml|units?)\b"
+    rf"|(?:start|stop|take)\b[^.\n]{{0,40}}\b{_MEDICATION_NAME}\b"
+    rf"|(?:increase|decrease|change|raise|lower)\b[^.\n]{{0,40}}\b(?:{_MEDICATION_NAME}|dose|dosage)\b"
+    rf")",
     re.IGNORECASE,
 )
 _ABSOLUTE_CLAIM = re.compile(
