@@ -121,6 +121,16 @@ def test_generic_medication_reference_without_dose_instruction_is_not_blocking()
     assert "medication_dose_instruction" not in finding_codes(review)
 
 
+def test_non_instructional_insulin_mention_is_not_blocking() -> None:
+    review = MedicalEditorialReviewEngine().review(
+        draft(body="Start learning about insulin therapy in this educational module."),
+        evidence("nih-1"),
+    )
+
+    assert review.approved is True
+    assert "medication_dose_instruction" not in finding_codes(review)
+
+
 def test_no_supported_claims_when_evidence_has_no_structural_support() -> None:
     unsupported_evidence = EvidenceOutput(
         claims=[
@@ -136,6 +146,17 @@ def test_no_supported_claims_when_evidence_has_no_structural_support() -> None:
 
     assert review.approved is False
     assert finding_codes(review) == ["no_supported_claims", "unsupported_source_reference"]
+
+
+def test_empty_body_uses_empty_body_no_supported_claims_path() -> None:
+    review = MedicalEditorialReviewEngine().review(
+        draft(body="", disclaimer="Educational information only; not medical advice."),
+        evidence("nih-1"),
+    )
+
+    assert review.approved is False
+    assert finding_codes(review) == ["no_supported_claims"]
+    assert review.findings[0].message == "Draft body is empty."
 
 
 def test_title_is_scanned_for_safety_patterns() -> None:
