@@ -108,6 +108,7 @@ def test_medication_initiation_or_dose_change_without_numeric_amount_is_blocking
 
     assert review.approved is False
     assert "medication_dose_instruction" in finding_codes(review)
+    assert review.findings[0].matched_text == "Start metformin"
 
 
 def test_non_instructional_medication_sentence_is_not_flagged() -> None:
