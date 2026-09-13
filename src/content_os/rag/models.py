@@ -27,3 +27,15 @@ class RetrievalHit(BaseModel):
     document: EvidenceDocument
     score: int = Field(ge=1)
     matched_terms: list[str] = Field(min_length=1)
+
+
+class EvidenceIngestionReceipt(BaseModel):
+    """Append-only proof that an immutable evidence version was persisted."""
+
+    id: int
+    action: str
+    source_id: str
+    version_id: str
+    content_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    retrieved_at: datetime
+    ingested_at: datetime
