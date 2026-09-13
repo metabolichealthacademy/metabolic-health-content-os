@@ -100,6 +100,36 @@ def test_human_cannot_reject_from_unsupported_revision_state() -> None:
     with pytest.raises(InvalidTransitionError, match="only allowed after production"):
         Orchestrator().reject(workflow, reason="Not ready", actor_id="reviewer-1")
 
+
+def test_legacy_safety_artifact_can_advance_from_production() -> None:
+    workflow = valid_workflow()
+    workflow.stage = WorkflowStage.PRODUCTION
+    workflow.artifacts["content"] = {
+        "title": "Educational topic",
+        "audience": "general public",
+        "body": "Supported educational copy.",
+        "cited_source_ids": ["nih-1"],
+        "disclaimer": "Educational information only; not medical advice.",
+    }
+    workflow.artifacts["safety"] = {
+        "approved": True,
+        "findings": [
+            {
+                "severity": "warning",
+                "code": "absolute_medical_claim",
+                "message": "Replace absolute medical language with evidence-calibrated wording.",
+                "matched_text": "always",
+            }
+        ],
+    }
+
+    Orchestrator().advance(workflow)
+
+    assert workflow.stage == WorkflowStage.HUMAN_REVIEW
+    assert workflow.status == WorkflowStatus.AWAITING_HUMAN
+    assert workflow.artifacts["production"]["publish_ready"] is False
+
+
 def test_completed_workflow_cannot_advance() -> None:
     workflow = valid_workflow()
     workflow.stage = WorkflowStage.COMPLETED
