@@ -1,6 +1,6 @@
 import pytest
 
-from content_os.models.content import ContentDraft
+from content_os.models.content import ContentDraft, SafetyReview
 from content_os.models.evidence import ClaimCandidate, SourceCandidate
 from content_os.models.workflow import Workflow, WorkflowStage, WorkflowStatus
 from content_os.orchestration.orchestrator import InvalidTransitionError, Orchestrator
@@ -132,6 +132,10 @@ def test_production_accepts_legacy_safety_artifact_without_finding_category_fiel
             }
         ],
     }
+
+    legacy_review = SafetyReview.model_validate(workflow.artifacts["safety"])
+    assert legacy_review.findings[0].category == "editorial"
+    assert legacy_review.findings[0].ruleset_version == "legacy"
 
     Orchestrator().advance(workflow)
 
