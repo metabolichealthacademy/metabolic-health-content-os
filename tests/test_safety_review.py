@@ -111,6 +111,16 @@ def test_medication_instruction_without_numeric_dose_is_blocking() -> None:
     assert review.findings[0].matched_text == "Increase your insulin dose"
 
 
+def test_generic_medication_reference_without_dose_instruction_is_not_blocking() -> None:
+    review = MedicalEditorialReviewEngine().review(
+        draft(body="Increase medication adherence with reminder tools."),
+        evidence("nih-1"),
+    )
+
+    assert review.approved is True
+    assert "medication_dose_instruction" not in finding_codes(review)
+
+
 def test_no_supported_claims_when_evidence_has_no_structural_support() -> None:
     unsupported_evidence = EvidenceOutput(
         claims=[

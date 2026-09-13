@@ -17,7 +17,11 @@ _MEDICATION_DOSE_INSTRUCTION = re.compile(
     r"[^.\n]{0,80}(?:"
     r"\b\d+(?:\.\d+)?\s*(?:mcg|mg|g|ml|units?)\b"
     r"|"
-    r"\b(?:insulin|metformin|medication|medicine|dose|dosage)\b)",
+    r"\b(?:insulin|metformin)\b(?:[^.\n]{0,40}\b(?:dose|dosage)\b)?"
+    r"|"
+    r"\b(?:medication|medicine)\b[^.\n]{0,40}\b(?:dose|dosage)\b"
+    r"|"
+    r"\b(?:dose|dosage)\b[^.\n]{0,40}\b(?:medication|medicine)\b)",
     re.IGNORECASE,
 )
 _ABSOLUTE_CLAIM = re.compile(
