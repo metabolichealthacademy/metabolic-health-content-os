@@ -38,7 +38,9 @@ def _load_safety_review(artifact: object) -> SafetyReview:
 
 def _is_legacy_safety_finding(artifact: object) -> bool:
     return isinstance(artifact, dict) and (
-        artifact.get("category") is None or artifact.get("ruleset_version") is None
+        artifact.get("category") is None
+        and artifact.get("ruleset_version") is None
+        and artifact.get("code") in _LEGACY_FINDING_CATEGORIES
     )
 
 

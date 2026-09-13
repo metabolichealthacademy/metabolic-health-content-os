@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from content_os.models.evidence import ClaimCandidate, SourceCandidate
 from content_os.models.workflow import Workflow, WorkflowStage, WorkflowStatus
@@ -132,6 +133,34 @@ def test_legacy_safety_artifact_without_metadata_can_advance_from_production() -
     assert workflow.stage == WorkflowStage.HUMAN_REVIEW
     assert workflow.status == WorkflowStatus.AWAITING_HUMAN
     assert workflow.artifacts["production"]["publish_ready"] is False
+
+
+def test_malformed_current_safety_artifact_still_fails_validation() -> None:
+    workflow = valid_workflow()
+    workflow.stage = WorkflowStage.PRODUCTION
+    workflow.artifacts["content"] = {
+        "title": "Educational topic",
+        "audience": "general public",
+        "body": "Supported educational copy.",
+        "cited_source_ids": ["nih-1"],
+        "disclaimer": "Educational information only; not medical advice.",
+    }
+    workflow.artifacts["safety"] = {
+        "approved": True,
+        "ruleset_version": "task-6a-v1",
+        "findings": [
+            {
+                "category": "editorial",
+                "severity": "warning",
+                "code": "absolute_medical_claim",
+                "message": "Replace absolute medical language with evidence-calibrated wording.",
+                "matched_text": "always",
+            }
+        ],
+    }
+
+    with pytest.raises(ValidationError, match="ruleset_version"):
+        Orchestrator().advance(workflow)
 
 
 def test_completed_workflow_cannot_advance() -> None:
