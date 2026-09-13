@@ -27,8 +27,9 @@ class ProductionAgent(BaseAgent):
             if has_review_ruleset_version
             else LEGACY_SAFETY_RULESET_VERSION
         )
+        should_backfill_review_ruleset = not isinstance(review_ruleset_version, str)
 
-        changed = not has_review_ruleset_version
+        changed = False
         normalized_findings: list[Any] = []
         for finding in findings:
             if not isinstance(finding, dict):
@@ -48,12 +49,14 @@ class ProductionAgent(BaseAgent):
             normalized_findings.append(normalized_finding)
 
         if not changed:
-            return artifact
-        return {
-            **artifact,
-            "ruleset_version": default_ruleset_version,
-            "findings": normalized_findings,
-        }
+            if not should_backfill_review_ruleset:
+                return artifact
+            return {**artifact, "ruleset_version": default_ruleset_version}
+
+        normalized_artifact = {**artifact, "findings": normalized_findings}
+        if should_backfill_review_ruleset:
+            normalized_artifact["ruleset_version"] = default_ruleset_version
+        return normalized_artifact
 
     def run(self, workflow: Workflow) -> ProductionPackage:
         safety_artifact = self.require_artifact(workflow, "safety")

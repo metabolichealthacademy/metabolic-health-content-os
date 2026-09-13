@@ -151,6 +151,26 @@ def test_production_backfills_finding_ruleset_from_review() -> None:
     assert normalized["findings"][0]["ruleset_version"] == "2026.09"
 
 
+def test_production_preserves_blank_review_ruleset_without_finding_backfill() -> None:
+    artifact = {
+        "approved": True,
+        "ruleset_version": "",
+        "findings": [
+            {
+                "category": "medical_safety",
+                "severity": "warning",
+                "code": "medication_instruction",
+                "message": "Avoid medication-specific treatment instructions.",
+                "ruleset_version": "2026.09",
+            }
+        ],
+    }
+
+    normalized = ProductionAgent()._with_legacy_safety_defaults(artifact)
+
+    assert normalized is artifact
+
+
 def test_completed_workflow_cannot_advance() -> None:
     workflow = valid_workflow()
     workflow.stage = WorkflowStage.COMPLETED
