@@ -1,5 +1,6 @@
 import pytest
 
+from content_os.models.content import ContentDraft
 from content_os.models.evidence import ClaimCandidate, SourceCandidate
 from content_os.models.workflow import Workflow, WorkflowStage, WorkflowStatus
 from content_os.orchestration.orchestrator import InvalidTransitionError, Orchestrator
@@ -107,3 +108,32 @@ def test_completed_workflow_cannot_advance() -> None:
 
     with pytest.raises(InvalidTransitionError, match="Cannot advance"):
         Orchestrator().advance(workflow)
+
+
+def test_production_accepts_legacy_safety_artifact_without_finding_category_fields() -> None:
+    workflow = valid_workflow()
+    workflow.stage = WorkflowStage.PRODUCTION
+    workflow.status = WorkflowStatus.ACTIVE
+    workflow.artifacts["content"] = ContentDraft(
+        title="Educational topic",
+        audience="general public",
+        body="A supported educational claim [nih-1].",
+        cited_source_ids=["nih-1"],
+        disclaimer="Educational information only; not medical advice.",
+    ).model_dump(mode="json")
+    workflow.artifacts["safety"] = {
+        "approved": True,
+        "ruleset_version": "task-6a-v0",
+        "findings": [
+            {
+                "severity": "warning",
+                "code": "editorial_clarity",
+                "message": "Legacy finding without category metadata.",
+            }
+        ],
+    }
+
+    Orchestrator().advance(workflow)
+
+    assert workflow.stage == WorkflowStage.HUMAN_REVIEW
+    assert workflow.status == WorkflowStatus.AWAITING_HUMAN
