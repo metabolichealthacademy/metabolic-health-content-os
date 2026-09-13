@@ -67,6 +67,22 @@ def test_ingestion_is_atomic_and_survives_a_new_repository_instance(
     assert counts(repository) == (1, 1, 1)
 
 
+def test_failure_after_all_flushes_rolls_back_entire_ingestion(
+    repository: SqlEvidenceRepository, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original = document("2026-01", date(2026, 1, 1), "Evidence")
+
+    def fail_after_flush(_: EvidenceIngestionReceiptRow) -> None:
+        raise RuntimeError("forced post-flush failure")
+
+    monkeypatch.setattr(SqlEvidenceRepository, "_to_receipt", staticmethod(fail_after_flush))
+
+    with pytest.raises(RuntimeError, match="forced post-flush failure"):
+        repository.ingest(original)
+
+    assert counts(repository) == (0, 0, 0)
+
+
 @pytest.mark.parametrize(
     ("overrides", "message"),
     [
