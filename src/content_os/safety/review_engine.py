@@ -17,9 +17,11 @@ _MEDICATION_DOSE_INSTRUCTION = re.compile(
     r"\b(?:start|stop|take|increase|decrease|change|raise|lower)\b"
     r"[^.\n]{0,80}\b\d+(?:\.\d+)?\s*(?:mcg|mg|g|ml|units?)\b"
     r"|"
-    r"\b(?:start|stop|take|increase|decrease|change|raise|lower)\s+"
+    r"\b(?:start|stop)\s+(?:your\s+|the\s+)?(?:insulin|metformin)\b"
+    r"|"
+    r"\b(?:increase|decrease|change|raise|lower)\s+"
     r"(?:your\s+|the\s+)?(?:insulin|metformin)\b"
-    r"(?:[^.\n]{0,30}\b(?:dose|dosage)\b)?"
+    r"(?:[^.\n]{0,30}\b(?:dose|dosage)\b)"
     r")",
     re.IGNORECASE,
 )
@@ -45,7 +47,9 @@ class MedicalEditorialReviewEngine:
             if claim.structurally_supported
             for source_id in claim.source_ids
         }
-        review_text = f"{draft.title}\n{draft.body}"
+        review_text = "\n".join(
+            part for part in [draft.title, draft.body] if isinstance(part, str) and part.strip()
+        )
 
         if not draft.body.strip():
             findings.append(
