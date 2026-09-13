@@ -38,8 +38,14 @@ class SafetyFinding(BaseModel):
                 "editorial_clarity",
             }:
                 normalized["category"] = "editorial"
-            else:
+            elif code in {
+                "missing_disclaimer",
+                "personalized_medical_instruction",
+                "medication_dose_instruction",
+            }:
                 normalized["category"] = "medical_safety"
+            else:
+                raise ValueError("Legacy safety finding with unknown code must include category")
         normalized.setdefault("ruleset_version", "legacy")
         return normalized
 
