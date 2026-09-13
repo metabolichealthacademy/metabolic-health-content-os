@@ -14,7 +14,10 @@ _PERSONALIZED_INSTRUCTION = re.compile(
 )
 _MEDICATION_DOSE_INSTRUCTION = re.compile(
     r"\b(?:start|stop|take|increase|decrease|change|raise|lower)\b"
-    r"[^.\n]{0,60}\b\d+(?:\.\d+)?\s*(?:mcg|mg|g|ml|units?)\b",
+    r"[^.\n]{0,80}(?:"
+    r"\b\d+(?:\.\d+)?\s*(?:mcg|mg|g|ml|units?)\b"
+    r"|"
+    r"\b(?:insulin|metformin|medication|medicine|dose|dosage)\b)",
     re.IGNORECASE,
 )
 _ABSOLUTE_CLAIM = re.compile(
@@ -39,8 +42,9 @@ class MedicalEditorialReviewEngine:
             if claim.structurally_supported
             for source_id in claim.source_ids
         }
+        review_text = f"{draft.title}\n{draft.body}"
 
-        if not draft.body.strip():
+        if not draft.body.strip() or not supported_source_ids:
             findings.append(
                 self._finding(
                     "evidence",
@@ -83,7 +87,7 @@ class MedicalEditorialReviewEngine:
 
         self._append_pattern_finding(
             findings,
-            draft.body,
+            review_text,
             _PERSONALIZED_INSTRUCTION,
             "medical_safety",
             "blocking",
@@ -92,7 +96,7 @@ class MedicalEditorialReviewEngine:
         )
         self._append_pattern_finding(
             findings,
-            draft.body,
+            review_text,
             _MEDICATION_DOSE_INSTRUCTION,
             "medical_safety",
             "blocking",
@@ -101,7 +105,7 @@ class MedicalEditorialReviewEngine:
         )
         self._append_pattern_finding(
             findings,
-            draft.body,
+            review_text,
             _ABSOLUTE_CLAIM,
             "editorial",
             "warning",
@@ -110,7 +114,7 @@ class MedicalEditorialReviewEngine:
         )
         self._append_pattern_finding(
             findings,
-            draft.body,
+            review_text,
             _CURE_OR_GUARANTEE,
             "editorial",
             "warning",

@@ -100,6 +100,51 @@ def test_medication_dose_instruction_is_blocking() -> None:
     assert review.findings[0].matched_text == "Start metformin 500 mg"
 
 
+def test_medication_instruction_without_numeric_dose_is_blocking() -> None:
+    review = MedicalEditorialReviewEngine().review(
+        draft(body="Increase your insulin dose."),
+        evidence("nih-1"),
+    )
+
+    assert review.approved is False
+    assert finding_codes(review) == ["medication_dose_instruction"]
+    assert review.findings[0].matched_text == "Increase your insulin dose"
+
+
+def test_no_supported_claims_when_evidence_has_no_structural_support() -> None:
+    unsupported_evidence = EvidenceOutput(
+        claims=[
+            ApprovedClaim(
+                text="Claim without structural support.",
+                source_ids=["nih-1"],
+                structurally_supported=False,
+            )
+        ],
+        limitations=["Not structurally supported."],
+    )
+    review = MedicalEditorialReviewEngine().review(draft(), unsupported_evidence)
+
+    assert review.approved is False
+    assert finding_codes(review) == ["no_supported_claims", "unsupported_source_reference"]
+
+
+def test_title_is_scanned_for_safety_patterns() -> None:
+    review = MedicalEditorialReviewEngine().review(
+        ContentDraft(
+            title="Start metformin 500 mg tonight.",
+            audience="general public",
+            body="Educational framing with supported references [nih-1].",
+            cited_source_ids=["nih-1"],
+            disclaimer="Educational information only; not medical advice.",
+        ),
+        evidence("nih-1"),
+    )
+
+    assert review.approved is False
+    assert finding_codes(review) == ["medication_dose_instruction"]
+    assert review.findings[0].matched_text == "Start metformin 500 mg"
+
+
 def test_absolute_cure_and_clarity_language_produce_warnings_only() -> None:
     long_sentence = " ".join(["word"] * 41) + "."
     review = MedicalEditorialReviewEngine().review(
