@@ -6,6 +6,9 @@ from content_os.agents.base import BaseAgent
 from content_os.models.content import ContentDraft, ProductionPackage, SafetyReview
 from content_os.models.workflow import Workflow, WorkflowStage
 
+LEGACY_SAFETY_RULESET_VERSION = "1.0.0"
+LEGACY_SAFETY_CATEGORY = "medical_safety"
+
 
 class ProductionAgent(BaseAgent):
     stage = WorkflowStage.PRODUCTION
@@ -17,7 +20,9 @@ class ProductionAgent(BaseAgent):
 
         review_ruleset_version = artifact.get("ruleset_version")
         has_review_ruleset_version = isinstance(review_ruleset_version, str)
-        default_ruleset_version = review_ruleset_version if has_review_ruleset_version else "1.0.0"
+        default_ruleset_version = (
+            review_ruleset_version if has_review_ruleset_version else LEGACY_SAFETY_RULESET_VERSION
+        )
 
         changed = not has_review_ruleset_version
         normalized_findings: list[Any] = []
@@ -28,7 +33,7 @@ class ProductionAgent(BaseAgent):
 
             normalized_finding = finding
             if "category" not in normalized_finding:
-                normalized_finding = {**normalized_finding, "category": "medical_safety"}
+                normalized_finding = {**normalized_finding, "category": LEGACY_SAFETY_CATEGORY}
                 changed = True
             if "ruleset_version" not in normalized_finding:
                 normalized_finding = {
