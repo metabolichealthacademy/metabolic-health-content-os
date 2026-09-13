@@ -35,9 +35,7 @@ def _load_safety_review(artifact: object) -> SafetyReview:
     ):
         return SafetyReview.model_validate(review)
 
-    if "ruleset_version" not in review:
-        review["ruleset_version"] = "legacy"
-    ruleset_version = review["ruleset_version"]
+    ruleset_version = review.get("ruleset_version")
     review["findings"] = [
         (
             _load_safety_finding(finding, ruleset_version)
@@ -64,7 +62,7 @@ def _is_legacy_safety_finding(artifact: object) -> bool:
     )
 
 
-def _load_safety_finding(artifact: object, ruleset_version: str) -> object:
+def _load_safety_finding(artifact: object, ruleset_version: object) -> object:
     if not isinstance(artifact, dict):
         return artifact
 
