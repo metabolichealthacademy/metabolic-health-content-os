@@ -19,9 +19,13 @@ class ProductionAgent(BaseAgent):
             return artifact
 
         review_ruleset_version = artifact.get("ruleset_version")
-        has_review_ruleset_version = isinstance(review_ruleset_version, str)
+        has_review_ruleset_version = (
+            isinstance(review_ruleset_version, str) and bool(review_ruleset_version.strip())
+        )
         default_ruleset_version = (
-            review_ruleset_version if has_review_ruleset_version else LEGACY_SAFETY_RULESET_VERSION
+            review_ruleset_version.strip()
+            if has_review_ruleset_version
+            else LEGACY_SAFETY_RULESET_VERSION
         )
 
         changed = not has_review_ruleset_version

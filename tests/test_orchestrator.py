@@ -1,5 +1,6 @@
 import pytest
 
+from content_os.agents.production import ProductionAgent
 from content_os.models.evidence import ClaimCandidate, SourceCandidate
 from content_os.models.workflow import Workflow, WorkflowStage, WorkflowStatus
 from content_os.orchestration.orchestrator import InvalidTransitionError, Orchestrator
@@ -129,6 +130,25 @@ def test_production_accepts_legacy_safety_findings() -> None:
     assert workflow.stage == WorkflowStage.HUMAN_REVIEW
     assert workflow.status == WorkflowStatus.AWAITING_HUMAN
     assert workflow.artifacts["production"]["publish_ready"] is False
+
+
+def test_production_backfills_finding_ruleset_from_review() -> None:
+    artifact = {
+        "approved": True,
+        "ruleset_version": "2026.09",
+        "findings": [
+            {
+                "severity": "warning",
+                "code": "medication_instruction",
+                "message": "Avoid medication-specific treatment instructions.",
+                "matched_text": "Start metformin 500 mg tonight.",
+            }
+        ],
+    }
+
+    normalized = ProductionAgent()._with_legacy_safety_defaults(artifact)
+
+    assert normalized["findings"][0]["ruleset_version"] == "2026.09"
 
 
 def test_completed_workflow_cannot_advance() -> None:
