@@ -100,6 +100,68 @@ def test_human_cannot_reject_from_unsupported_revision_state() -> None:
     with pytest.raises(InvalidTransitionError, match="only allowed after production"):
         Orchestrator().reject(workflow, reason="Not ready", actor_id="reviewer-1")
 
+
+def test_production_accepts_legacy_safety_findings() -> None:
+    workflow = valid_workflow()
+    workflow.stage = WorkflowStage.PRODUCTION
+    workflow.status = WorkflowStatus.ACTIVE
+    workflow.artifacts["content"] = {
+        "title": "Insulin resistance overview",
+        "audience": "general public",
+        "body": "Insulin resistance can precede type 2 diabetes.",
+        "cited_source_ids": ["nih-1"],
+        "disclaimer": "Educational content only.",
+    }
+    workflow.artifacts["safety"] = {
+        "approved": True,
+        "findings": [
+            {
+                "severity": "warning",
+                "code": "medication_instruction",
+                "message": "Avoid medication-specific treatment instructions.",
+                "matched_text": "Start metformin 500 mg tonight.",
+            }
+        ],
+    }
+
+    Orchestrator().advance(workflow)
+
+    assert workflow.stage == WorkflowStage.HUMAN_REVIEW
+    assert workflow.status == WorkflowStatus.AWAITING_HUMAN
+    assert workflow.artifacts["production"]["publish_ready"] is False
+
+
+def test_production_accepts_review_ruleset_backfill_for_findings() -> None:
+    workflow = valid_workflow()
+    workflow.stage = WorkflowStage.PRODUCTION
+    workflow.status = WorkflowStatus.ACTIVE
+    workflow.artifacts["content"] = {
+        "title": "Insulin resistance overview",
+        "audience": "general public",
+        "body": "Insulin resistance can precede type 2 diabetes.",
+        "cited_source_ids": ["nih-1"],
+        "disclaimer": "Educational content only.",
+    }
+    workflow.artifacts["safety"] = {
+        "approved": True,
+        "ruleset_version": "2026.09",
+        "findings": [
+            {
+                "category": "medical_safety",
+                "severity": "warning",
+                "code": "medication_instruction",
+                "message": "Avoid medication-specific treatment instructions.",
+            }
+        ],
+    }
+
+    Orchestrator().advance(workflow)
+
+    assert workflow.stage == WorkflowStage.HUMAN_REVIEW
+    assert workflow.status == WorkflowStatus.AWAITING_HUMAN
+    assert workflow.artifacts["production"]["publish_ready"] is False
+
+
 def test_completed_workflow_cannot_advance() -> None:
     workflow = valid_workflow()
     workflow.stage = WorkflowStage.COMPLETED
