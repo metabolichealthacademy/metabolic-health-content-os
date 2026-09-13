@@ -51,14 +51,17 @@ def _load_safety_review(artifact: object) -> SafetyReview:
 
 def _is_missing_safety_metadata(artifact: object) -> bool:
     return isinstance(artifact, dict) and (
-        artifact.get("category") is None or artifact.get("ruleset_version") is None
+        "category" not in artifact or "ruleset_version" not in artifact
     )
 
 
 def _is_legacy_safety_finding(artifact: object) -> bool:
-    return _is_missing_safety_metadata(artifact) and artifact.get("category") is None and (
-        artifact.get("ruleset_version") is None
-    ) and artifact.get("code") in _LEGACY_FINDING_CATEGORIES
+    return (
+        isinstance(artifact, dict)
+        and "category" not in artifact
+        and "ruleset_version" not in artifact
+        and artifact.get("code") in _LEGACY_FINDING_CATEGORIES
+    )
 
 
 def _load_safety_finding(artifact: object, ruleset_version: str) -> object:

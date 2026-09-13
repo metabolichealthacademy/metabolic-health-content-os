@@ -194,6 +194,35 @@ def test_mixed_legacy_and_unknown_metadata_missing_findings_fail_validation() ->
         Orchestrator().advance(workflow)
 
 
+def test_null_safety_metadata_is_not_treated_as_legacy() -> None:
+    workflow = valid_workflow()
+    workflow.stage = WorkflowStage.PRODUCTION
+    workflow.artifacts["content"] = {
+        "title": "Educational topic",
+        "audience": "general public",
+        "body": "Supported educational copy.",
+        "cited_source_ids": ["nih-1"],
+        "disclaimer": "Educational information only; not medical advice.",
+    }
+    workflow.artifacts["safety"] = {
+        "approved": True,
+        "findings": [
+            {
+                "category": None,
+                "severity": "warning",
+                "code": "absolute_medical_claim",
+                "message": "Replace absolute medical language with evidence-calibrated wording.",
+                "matched_text": "always",
+                "ruleset_version": None,
+            }
+        ],
+        "ruleset_version": "task-6a-v1",
+    }
+
+    with pytest.raises(ValidationError, match="category"):
+        Orchestrator().advance(workflow)
+
+
 def test_completed_workflow_cannot_advance() -> None:
     workflow = valid_workflow()
     workflow.stage = WorkflowStage.COMPLETED
