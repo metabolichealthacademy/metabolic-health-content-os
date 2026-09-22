@@ -9,7 +9,8 @@ SAFETY_RULESET_VERSION = "task-6a-v1"
 _MEDICATION_NAME = r"(?:insulin|metformin)"
 _OPENING_PUNCTUATION = r"(?:[\"'“”‘’(\[]\s*)*"
 _IMPERATIVE_PREFIX = (
-    rf"(?:(?<=^)|(?<=[.!?]\s)|(?<=\n)|(?<=,\s)){_OPENING_PUNCTUATION}(?:please\s+)?"
+    rf"(?:(?<=^)|(?<=[.!?]\s)|(?<=\n)|(?<=,\s)|(?<=:\s)|(?<=;\s))"
+    rf"{_OPENING_PUNCTUATION}(?:please\s+)?"
 )
 
 _PERSONALIZED_INSTRUCTION = re.compile(
