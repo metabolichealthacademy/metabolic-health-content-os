@@ -151,6 +151,16 @@ def test_quoted_medication_instruction_is_still_blocking() -> None:
     assert "medication_dose_instruction" in finding_codes(review)
 
 
+def test_inline_clause_imperative_medication_instruction_is_blocking() -> None:
+    review = MedicalEditorialReviewEngine().review(
+        draft(body="If your glucose remains high, start metformin."),
+        evidence("nih-1"),
+    )
+
+    assert review.approved is False
+    assert "medication_dose_instruction" in finding_codes(review)
+
+
 def test_no_supported_claims_when_evidence_has_no_structural_support() -> None:
     unsupported_evidence = EvidenceOutput(
         claims=[
