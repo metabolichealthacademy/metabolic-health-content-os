@@ -7,6 +7,11 @@ from content_os.models.evidence import EvidenceOutput
 
 SAFETY_RULESET_VERSION = "task-6a-v1"
 _MEDICATION_NAME = r"(?:insulin|metformin)"
+_MEDICATION_MODIFIER = (
+    r"(?:basal|bolus|rapid(?:-acting)?|long(?:-acting)?|short(?:-acting)?|"
+    r"extended(?:-release)?|immediate(?:-release)?)"
+)
+_MEDICATION_MODIFIERS = rf"(?:(?:{_MEDICATION_MODIFIER})\s+){{0,2}}"
 _OPENING_PUNCTUATION = r"(?:[\"'“”‘’(\[]\s*)*"
 _IMPERATIVE_LEAD_IN = r"(?:(?:[-*•]|\d+[.)])\s+)?(?:(?:then|next|now)\s+)?(?:please\s+)?"
 _IMPERATIVE_PREFIX = (
@@ -23,9 +28,11 @@ _MEDICATION_DOSE_INSTRUCTION = re.compile(
     rf"(?:"
     rf"(?:start|stop|take|increase|decrease|change|raise|lower)\b"
     rf"[^.\n]{{0,80}}\b\d+(?:\.\d+)?\s*(?:mcg|mg|g|ml|units?)\b"
-    rf"|{_IMPERATIVE_PREFIX}(?:start|stop|take)\s+(?:your\s+|the\s+)?{_MEDICATION_NAME}\b"
+    rf"|{_IMPERATIVE_PREFIX}(?:start|stop|take)\s+"
+    rf"(?:your\s+|the\s+)?{_MEDICATION_MODIFIERS}{_MEDICATION_NAME}\b"
     rf"|{_IMPERATIVE_PREFIX}(?:increase|decrease|change|raise|lower)\s+"
-    rf"(?:your\s+|the\s+)?(?:{_MEDICATION_NAME}(?:\s+(?:dose|dosage))?|dose|dosage)\b"
+    rf"(?:your\s+|the\s+)?"
+    rf"(?:{_MEDICATION_MODIFIERS}{_MEDICATION_NAME}(?:\s+(?:dose|dosage))?|dose|dosage)\b"
     rf")",
     re.IGNORECASE,
 )
