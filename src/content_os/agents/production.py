@@ -76,6 +76,31 @@ class ProductionAgent(BaseAgent):
             review_mapping = dict(safety_artifact)
         else:
             review_mapping = dict(safety_artifact)
+        findings = review_mapping.get("findings")
+        if isinstance(findings, list):
+            normalized_findings = []
+            for finding in findings:
+                if isinstance(finding, BaseModel):
+                    normalized_findings.append(finding.model_dump(mode="json"))
+                elif isinstance(finding, Mapping):
+                    normalized_findings.append(dict(finding))
+                else:
+                    try:
+                        normalized_findings.append(dict(finding))
+                    except TypeError:
+                        normalized_findings.append(
+                            {
+                                "severity": getattr(finding, "severity", "warning"),
+                                "code": getattr(finding, "code", "legacy_finding"),
+                                "message": getattr(
+                                    finding,
+                                    "message",
+                                    f"Legacy finding preserved from {type(finding).__name__}.",
+                                ),
+                                "matched_text": getattr(finding, "matched_text", None),
+                            }
+                        )
+            review_mapping = {**review_mapping, "findings": normalized_findings}
         review = SafetyReview.model_validate(
             self._with_legacy_safety_defaults(review_mapping)
         )
