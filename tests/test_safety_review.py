@@ -131,6 +131,16 @@ def test_non_instructional_insulin_mention_is_not_blocking() -> None:
     assert "medication_dose_instruction" not in finding_codes(review)
 
 
+def test_descriptive_medication_reference_is_not_flagged_as_instruction() -> None:
+    review = MedicalEditorialReviewEngine().review(
+        draft(body="Patients who start metformin may notice mild side effects."),
+        evidence("nih-1"),
+    )
+
+    assert review.approved is True
+    assert "medication_dose_instruction" not in finding_codes(review)
+
+
 def test_no_supported_claims_when_evidence_has_no_structural_support() -> None:
     unsupported_evidence = EvidenceOutput(
         claims=[
@@ -174,6 +184,23 @@ def test_title_is_scanned_for_safety_patterns() -> None:
     assert review.approved is False
     assert finding_codes(review) == ["medication_dose_instruction"]
     assert review.findings[0].matched_text == "Start metformin 500 mg"
+
+
+def test_title_long_sentence_triggers_editorial_clarity_warning() -> None:
+    long_title = " ".join(["word"] * 41)
+    review = MedicalEditorialReviewEngine().review(
+        ContentDraft(
+            title=long_title,
+            audience="general public",
+            body="Educational framing with supported references [nih-1].",
+            cited_source_ids=["nih-1"],
+            disclaimer="Educational information only; not medical advice.",
+        ),
+        evidence("nih-1"),
+    )
+
+    assert review.approved is True
+    assert "editorial_clarity" in finding_codes(review)
 
 
 def test_absolute_cure_and_clarity_language_produce_warnings_only() -> None:

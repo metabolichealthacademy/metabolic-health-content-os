@@ -6,6 +6,8 @@ from content_os.models.content import ContentDraft, SafetyFinding, SafetyReview
 from content_os.models.evidence import EvidenceOutput
 
 SAFETY_RULESET_VERSION = "task-6a-v1"
+_MEDICATION_NAME = r"(?:insulin|metformin)"
+_IMPERATIVE_PREFIX = r"(?:(?<=^)|(?<=[.!?]\s)|(?<=\n))(?:please\s+)?"
 
 _PERSONALIZED_INSTRUCTION = re.compile(
     r"\b(?:you have|you are diagnosed with|your diagnosis is|"
@@ -13,16 +15,13 @@ _PERSONALIZED_INSTRUCTION = re.compile(
     re.IGNORECASE,
 )
 _MEDICATION_DOSE_INSTRUCTION = re.compile(
-    r"(?:"
-    r"\b(?:start|stop|take|increase|decrease|change|raise|lower)\b"
-    r"[^.\n]{0,80}\b\d+(?:\.\d+)?\s*(?:mcg|mg|g|ml|units?)\b"
-    r"|"
-    r"\b(?:start|stop)\s+(?:your\s+|the\s+)?(?:insulin|metformin)\b"
-    r"|"
-    r"\b(?:increase|decrease|change|raise|lower)\s+"
-    r"(?:your\s+|the\s+)?(?:insulin|metformin)\b"
-    r"(?:[^.\n]{0,30}\b(?:dose|dosage)\b)"
-    r")",
+    rf"\b(?:"
+    rf"(?:start|stop|take|increase|decrease|change|raise|lower)\b"
+    rf"[^.\n]{{0,80}}\b\d+(?:\.\d+)?\s*(?:mcg|mg|g|ml|units?)\b"
+    rf"|{_IMPERATIVE_PREFIX}(?:start|stop|take)\s+(?:your\s+|the\s+)?{_MEDICATION_NAME}\b"
+    rf"|{_IMPERATIVE_PREFIX}(?:increase|decrease|change|raise|lower)\s+"
+    rf"(?:your\s+|the\s+)?(?:{_MEDICATION_NAME}(?:\s+(?:dose|dosage))?|dose|dosage)\b"
+    rf")",
     re.IGNORECASE,
 )
 _ABSOLUTE_CLAIM = re.compile(
@@ -141,7 +140,7 @@ class MedicalEditorialReviewEngine:
         unclear_sentence = next(
             (
                 sentence.strip()
-                for sentence in _SENTENCE.findall(draft.body)
+                for sentence in _SENTENCE.findall(review_text)
                 if len(sentence.split()) > 40
             ),
             None,
