@@ -7,6 +7,17 @@ from content_os.models.evidence import EvidenceOutput
 
 SAFETY_RULESET_VERSION = "task-6a-v1"
 _MEDICATION_NAME = r"(?:insulin|metformin)"
+_MEDICATION_MODIFIER = (
+    r"(?:basal|bolus|rapid(?:-acting)?|long(?:-acting)?|short(?:-acting)?|"
+    r"extended(?:-release)?|immediate(?:-release)?)"
+)
+_MEDICATION_MODIFIERS = rf"(?:(?:{_MEDICATION_MODIFIER})\s+){{0,2}}"
+_OPENING_PUNCTUATION = r"(?:[\"'“”‘’(\[]\s*)*"
+_IMPERATIVE_LEAD_IN = r"(?:(?:[-*•]|\d+[.)])\s+)?(?:(?:then|next|now)\s+)?(?:please\s+)?"
+_IMPERATIVE_PREFIX = (
+    rf"(?:(?<=^)|(?<=[.!?]\s)|(?<=\n)|(?<=,\s)|(?<=:\s)|(?<=;\s))"
+    rf"{_OPENING_PUNCTUATION}{_IMPERATIVE_LEAD_IN}"
+)
 
 _PERSONALIZED_INSTRUCTION = re.compile(
     r"\b(?:you have|you are diagnosed with|your diagnosis is|"
@@ -14,11 +25,14 @@ _PERSONALIZED_INSTRUCTION = re.compile(
     re.IGNORECASE,
 )
 _MEDICATION_DOSE_INSTRUCTION = re.compile(
-    rf"\b(?:"
+    rf"(?:"
     rf"(?:start|stop|take|increase|decrease|change|raise|lower)\b"
-    rf"[^.\n]{{0,60}}\b\d+(?:\.\d+)?\s*(?:mcg|mg|g|ml|units?)\b"
-    rf"|(?:start|stop|take)\b[^.\n]{{0,40}}\b{_MEDICATION_NAME}\b"
-    rf"|(?:increase|decrease|change|raise|lower)\b[^.\n]{{0,40}}\b(?:{_MEDICATION_NAME}|dose|dosage)\b"
+    rf"[^.\n]{{0,80}}\b\d+(?:\.\d+)?\s*(?:mcg|mg|g|ml|units?)\b"
+    rf"|{_IMPERATIVE_PREFIX}(?:start|stop|take)\s+"
+    rf"(?:your\s+|the\s+)?{_MEDICATION_MODIFIERS}{_MEDICATION_NAME}\b"
+    rf"|{_IMPERATIVE_PREFIX}(?:increase|decrease|change|raise|lower)\s+"
+    rf"(?:your\s+|the\s+)?"
+    rf"(?:{_MEDICATION_MODIFIERS}{_MEDICATION_NAME}(?:\s+(?:dose|dosage))?|dose|dosage)\b"
     rf")",
     re.IGNORECASE,
 )
@@ -44,8 +58,20 @@ class MedicalEditorialReviewEngine:
             if claim.structurally_supported
             for source_id in claim.source_ids
         }
+        review_text = "\n".join(
+            part for part in [draft.title, draft.body] if isinstance(part, str) and part.strip()
+        )
 
         if not draft.body.strip():
+            findings.append(
+                self._finding(
+                    "evidence",
+                    "blocking",
+                    "no_supported_claims",
+                    "Draft body is empty.",
+                )
+            )
+        elif not supported_source_ids:
             findings.append(
                 self._finding(
                     "evidence",
@@ -88,7 +114,7 @@ class MedicalEditorialReviewEngine:
 
         self._append_pattern_finding(
             findings,
-            draft.body,
+            review_text,
             _PERSONALIZED_INSTRUCTION,
             "medical_safety",
             "blocking",
@@ -97,7 +123,7 @@ class MedicalEditorialReviewEngine:
         )
         self._append_pattern_finding(
             findings,
-            draft.body,
+            review_text,
             _MEDICATION_DOSE_INSTRUCTION,
             "medical_safety",
             "blocking",
@@ -106,7 +132,7 @@ class MedicalEditorialReviewEngine:
         )
         self._append_pattern_finding(
             findings,
-            draft.body,
+            review_text,
             _ABSOLUTE_CLAIM,
             "editorial",
             "warning",
@@ -115,7 +141,7 @@ class MedicalEditorialReviewEngine:
         )
         self._append_pattern_finding(
             findings,
-            draft.body,
+            review_text,
             _CURE_OR_GUARANTEE,
             "editorial",
             "warning",
@@ -126,7 +152,7 @@ class MedicalEditorialReviewEngine:
         unclear_sentence = next(
             (
                 sentence.strip()
-                for sentence in _SENTENCE.findall(draft.body)
+                for sentence in _SENTENCE.findall(review_text)
                 if len(sentence.split()) > 40
             ),
             None,
