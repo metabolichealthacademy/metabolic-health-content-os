@@ -7,7 +7,10 @@ from content_os.models.evidence import EvidenceOutput
 
 SAFETY_RULESET_VERSION = "task-6a-v1"
 _MEDICATION_NAME = r"(?:insulin|metformin)"
-_IMPERATIVE_PREFIX = r"(?:(?<=^)|(?<=[.!?]\s)|(?<=\n))(?:please\s+)?"
+_OPENING_PUNCTUATION = r"(?:[\"'“”‘’(\[]\s*)*"
+_IMPERATIVE_PREFIX = (
+    rf"(?:(?<=^)|(?<=[.!?]\s)|(?<=\n)){_OPENING_PUNCTUATION}(?:please\s+)?"
+)
 
 _PERSONALIZED_INSTRUCTION = re.compile(
     r"\b(?:you have|you are diagnosed with|your diagnosis is|"
@@ -15,7 +18,7 @@ _PERSONALIZED_INSTRUCTION = re.compile(
     re.IGNORECASE,
 )
 _MEDICATION_DOSE_INSTRUCTION = re.compile(
-    rf"\b(?:"
+    rf"(?:"
     rf"(?:start|stop|take|increase|decrease|change|raise|lower)\b"
     rf"[^.\n]{{0,80}}\b\d+(?:\.\d+)?\s*(?:mcg|mg|g|ml|units?)\b"
     rf"|{_IMPERATIVE_PREFIX}(?:start|stop|take)\s+(?:your\s+|the\s+)?{_MEDICATION_NAME}\b"

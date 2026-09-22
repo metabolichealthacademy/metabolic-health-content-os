@@ -141,6 +141,16 @@ def test_descriptive_medication_reference_is_not_flagged_as_instruction() -> Non
     assert "medication_dose_instruction" not in finding_codes(review)
 
 
+def test_quoted_medication_instruction_is_still_blocking() -> None:
+    review = MedicalEditorialReviewEngine().review(
+        draft(body='"Start metformin tonight."'),
+        evidence("nih-1"),
+    )
+
+    assert review.approved is False
+    assert "medication_dose_instruction" in finding_codes(review)
+
+
 def test_no_supported_claims_when_evidence_has_no_structural_support() -> None:
     unsupported_evidence = EvidenceOutput(
         claims=[
