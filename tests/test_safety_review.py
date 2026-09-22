@@ -246,6 +246,44 @@ def test_title_is_scanned_for_safety_patterns() -> None:
     assert review.findings[0].matched_text == "Start metformin 500 mg"
 
 
+def test_non_empty_draft_with_no_structurally_supported_claims_is_blocking() -> None:
+    review = MedicalEditorialReviewEngine().review(
+        draft(body="Educational claim text with citation [nih-1]."),
+        EvidenceOutput(
+            claims=[
+                ApprovedClaim(
+                    text="Unverified claim.",
+                    source_ids=["nih-1"],
+                    structurally_supported=False,
+                )
+            ],
+            limitations=["No structural support."],
+        ),
+    )
+
+    assert review.approved is False
+    assert finding_codes(review) == ["no_supported_claims", "unsupported_source_reference"]
+
+
+def test_unrelated_supported_evidence_still_blocks_no_supported_claims() -> None:
+    review = MedicalEditorialReviewEngine().review(
+        draft(body="Educational claim text with citation [nih-1].", source_ids=["nih-1"]),
+        EvidenceOutput(
+            claims=[
+                ApprovedClaim(
+                    text="Different supported claim.",
+                    source_ids=["nih-2"],
+                    structurally_supported=True,
+                )
+            ],
+            limitations=["Support exists only for a different source."],
+        ),
+    )
+
+    assert review.approved is False
+    assert finding_codes(review) == ["no_supported_claims", "unsupported_source_reference"]
+
+
 def test_title_long_sentence_triggers_editorial_clarity_warning() -> None:
     long_title = " ".join(["word"] * 41)
     review = MedicalEditorialReviewEngine().review(
@@ -258,7 +296,6 @@ def test_title_long_sentence_triggers_editorial_clarity_warning() -> None:
         ),
         evidence("nih-1"),
     )
-
     assert review.approved is True
     assert "editorial_clarity" in finding_codes(review)
 

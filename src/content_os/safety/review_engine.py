@@ -52,15 +52,14 @@ class MedicalEditorialReviewEngine:
 
     def review(self, draft: ContentDraft, evidence: EvidenceOutput) -> SafetyReview:
         findings: list[SafetyFinding] = []
+        scan_fields = (draft.title, draft.body)
         supported_source_ids = {
             source_id
             for claim in evidence.claims
             if claim.structurally_supported
             for source_id in claim.source_ids
         }
-        review_text = "\n".join(
-            part for part in [draft.title, draft.body] if isinstance(part, str) and part.strip()
-        )
+        has_supported_citations = bool(set(draft.cited_source_ids) & supported_source_ids)
 
         if not draft.body.strip():
             findings.append(
@@ -71,7 +70,16 @@ class MedicalEditorialReviewEngine:
                     "Draft body is empty.",
                 )
             )
-        elif not supported_source_ids:
+        elif draft.cited_source_ids and not has_supported_citations:
+            findings.append(
+                self._finding(
+                    "evidence",
+                    "blocking",
+                    "no_supported_claims",
+                    "Draft has no structurally supported claims.",
+                )
+            )
+        elif not draft.cited_source_ids and not supported_source_ids:
             findings.append(
                 self._finding(
                     "evidence",
@@ -112,47 +120,60 @@ class MedicalEditorialReviewEngine:
                 )
             )
 
-        self._append_pattern_finding(
-            findings,
-            review_text,
-            _PERSONALIZED_INSTRUCTION,
-            "medical_safety",
-            "blocking",
-            "personalized_medical_instruction",
-            "Personalized diagnostic or treatment instructions are not permitted.",
+        personalized_match = self._first_match(_PERSONALIZED_INSTRUCTION, *scan_fields)
+        if personalized_match:
+            findings.append(
+                self._finding(
+                    "medical_safety",
+                    "blocking",
+                    "personalized_medical_instruction",
+                    "Personalized diagnostic or treatment instructions are not permitted.",
+                    personalized_match.group(0),
+                )
+            )
+
+        medication_match = self._first_match(
+            _MEDICATION_DOSE_INSTRUCTION, *scan_fields
         )
-        self._append_pattern_finding(
-            findings,
-            review_text,
-            _MEDICATION_DOSE_INSTRUCTION,
-            "medical_safety",
-            "blocking",
-            "medication_dose_instruction",
-            "Medication initiation or dose-change instructions are not permitted.",
-        )
-        self._append_pattern_finding(
-            findings,
-            review_text,
-            _ABSOLUTE_CLAIM,
-            "editorial",
-            "warning",
-            "absolute_medical_claim",
-            "Replace absolute medical language with evidence-calibrated wording.",
-        )
-        self._append_pattern_finding(
-            findings,
-            review_text,
-            _CURE_OR_GUARANTEE,
-            "editorial",
-            "warning",
-            "cure_or_guarantee_language",
-            "Cure or guaranteed-outcome language requires editorial revision.",
-        )
+        if medication_match:
+            findings.append(
+                self._finding(
+                    "medical_safety",
+                    "blocking",
+                    "medication_dose_instruction",
+                    "Medication initiation or dose-change instructions are not permitted.",
+                    medication_match.group(0),
+                )
+            )
+        absolute_claim_match = self._first_match(_ABSOLUTE_CLAIM, *scan_fields)
+        if absolute_claim_match:
+            findings.append(
+                self._finding(
+                    "editorial",
+                    "warning",
+                    "absolute_medical_claim",
+                    "Replace absolute medical language with evidence-calibrated wording.",
+                    absolute_claim_match.group(0),
+                )
+            )
+
+        cure_or_guarantee_match = self._first_match(_CURE_OR_GUARANTEE, *scan_fields)
+        if cure_or_guarantee_match:
+            findings.append(
+                self._finding(
+                    "editorial",
+                    "warning",
+                    "cure_or_guarantee_language",
+                    "Cure or guaranteed-outcome language requires editorial revision.",
+                    cure_or_guarantee_match.group(0),
+                )
+            )
 
         unclear_sentence = next(
             (
                 sentence.strip()
-                for sentence in _SENTENCE.findall(review_text)
+                for text in scan_fields
+                for sentence in _SENTENCE.findall(text)
                 if len(sentence.split()) > 40
             ),
             None,
@@ -191,18 +212,12 @@ class MedicalEditorialReviewEngine:
             ruleset_version=SAFETY_RULESET_VERSION,
         )
 
-    def _append_pattern_finding(
-        self,
-        findings: list[SafetyFinding],
-        body: str,
-        pattern: re.Pattern[str],
-        category: str,
-        severity: str,
-        code: str,
-        message: str,
-    ) -> None:
-        match = pattern.search(body)
-        if match:
-            findings.append(
-                self._finding(category, severity, code, message, match.group(0))
-            )
+    @staticmethod
+    def _first_match(
+        pattern: re.Pattern[str], *texts: str
+    ) -> re.Match[str] | None:
+        for text in texts:
+            match = pattern.search(text)
+            if match:
+                return match
+        return None

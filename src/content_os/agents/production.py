@@ -1,6 +1,9 @@
 """Production packaging agent; publishing remains intentionally disabled."""
 
+from collections.abc import Mapping
 from typing import Any
+
+from pydantic import BaseModel
 
 from content_os.agents.base import BaseAgent
 from content_os.models.content import ContentDraft, ProductionPackage, SafetyReview
@@ -67,7 +70,40 @@ class ProductionAgent(BaseAgent):
 
     def run(self, workflow: Workflow) -> ProductionPackage:
         safety_artifact = self.require_artifact(workflow, "safety")
-        review = SafetyReview.model_validate(self._with_legacy_safety_defaults(safety_artifact))
+        if isinstance(safety_artifact, BaseModel):
+            review_mapping = safety_artifact.model_dump(mode="json")
+        elif isinstance(safety_artifact, Mapping):
+            review_mapping = dict(safety_artifact)
+        else:
+            review_mapping = dict(safety_artifact)
+        findings = review_mapping.get("findings")
+        if isinstance(findings, list):
+            normalized_findings = []
+            for finding in findings:
+                if isinstance(finding, BaseModel):
+                    normalized_findings.append(finding.model_dump(mode="json"))
+                elif isinstance(finding, Mapping):
+                    normalized_findings.append(dict(finding))
+                else:
+                    try:
+                        normalized_findings.append(dict(finding))
+                    except TypeError:
+                        normalized_findings.append(
+                            {
+                                "severity": getattr(finding, "severity", "warning"),
+                                "code": getattr(finding, "code", "legacy_finding"),
+                                "message": getattr(
+                                    finding,
+                                    "message",
+                                    f"Legacy finding preserved from {type(finding).__name__}.",
+                                ),
+                                "matched_text": getattr(finding, "matched_text", None),
+                            }
+                        )
+            review_mapping = {**review_mapping, "findings": normalized_findings}
+        review = SafetyReview.model_validate(
+            self._with_legacy_safety_defaults(review_mapping)
+        )
         if not review.approved:
             raise ValueError("Production requires safety approval")
         draft = ContentDraft.model_validate(self.require_artifact(workflow, "content"))
