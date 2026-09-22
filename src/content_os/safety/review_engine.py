@@ -6,6 +6,18 @@ from content_os.models.content import ContentDraft, SafetyFinding, SafetyReview
 from content_os.models.evidence import EvidenceOutput
 
 SAFETY_RULESET_VERSION = "task-6a-v1"
+_MEDICATION_NAME = r"(?:insulin|metformin)"
+_MEDICATION_MODIFIER = (
+    r"(?:basal|bolus|rapid(?:-acting)?|long(?:-acting)?|short(?:-acting)?|"
+    r"extended(?:-release)?|immediate(?:-release)?)"
+)
+_MEDICATION_MODIFIERS = rf"(?:(?:{_MEDICATION_MODIFIER})\s+){{0,2}}"
+_OPENING_PUNCTUATION = r"(?:[\"'“”‘’(\[]\s*)*"
+_IMPERATIVE_LEAD_IN = r"(?:(?:[-*•]|\d+[.)])\s+)?(?:(?:then|next|now)\s+)?(?:please\s+)?"
+_IMPERATIVE_PREFIX = (
+    rf"(?:(?<=^)|(?<=[.!?]\s)|(?<=\n)|(?<=,\s)|(?<=:\s)|(?<=;\s))"
+    rf"{_OPENING_PUNCTUATION}{_IMPERATIVE_LEAD_IN}"
+)
 
 _PERSONALIZED_INSTRUCTION = re.compile(
     r"\b(?:you have|you are diagnosed with|your diagnosis is|"
@@ -13,13 +25,15 @@ _PERSONALIZED_INSTRUCTION = re.compile(
     re.IGNORECASE,
 )
 _MEDICATION_DOSE_INSTRUCTION = re.compile(
-    r"\b(?:start|stop|take|increase|decrease|change|raise|lower)\b"
-    r"[^.\n]{0,60}\b\d+(?:\.\d+)?\s*(?:mcg|mg|g|ml|units?)\b",
-    re.IGNORECASE,
-)
-_MEDICATION_TREATMENT_INSTRUCTION = re.compile(
-    r"\b(?:start|stop|take|increase|decrease|change|raise|lower)\b"
-    r"[^.\n]{0,60}\b(?:medication|medicine|drug|insulin|metformin|dose|dosage|prescription)\b",
+    rf"(?:"
+    rf"(?:start|stop|take|increase|decrease|change|raise|lower)\b"
+    rf"[^.\n]{{0,80}}\b\d+(?:\.\d+)?\s*(?:mcg|mg|g|ml|units?)\b"
+    rf"|{_IMPERATIVE_PREFIX}(?:start|stop|take)\s+"
+    rf"(?:your\s+|the\s+)?{_MEDICATION_MODIFIERS}{_MEDICATION_NAME}\b"
+    rf"|{_IMPERATIVE_PREFIX}(?:increase|decrease|change|raise|lower)\s+"
+    rf"(?:your\s+|the\s+)?"
+    rf"(?:{_MEDICATION_MODIFIERS}{_MEDICATION_NAME}(?:\s+(?:dose|dosage))?|dose|dosage)\b"
+    rf")",
     re.IGNORECASE,
 )
 _ABSOLUTE_CLAIM = re.compile(
@@ -47,7 +61,25 @@ class MedicalEditorialReviewEngine:
         }
         has_supported_citations = bool(set(draft.cited_source_ids) & supported_source_ids)
 
-        if not draft.body.strip() or (draft.cited_source_ids and not has_supported_citations):
+        if not draft.body.strip():
+            findings.append(
+                self._finding(
+                    "evidence",
+                    "blocking",
+                    "no_supported_claims",
+                    "Draft body is empty.",
+                )
+            )
+        elif draft.cited_source_ids and not has_supported_citations:
+            findings.append(
+                self._finding(
+                    "evidence",
+                    "blocking",
+                    "no_supported_claims",
+                    "Draft has no structurally supported claims.",
+                )
+            )
+        elif not supported_source_ids:
             findings.append(
                 self._finding(
                     "evidence",
@@ -102,7 +134,7 @@ class MedicalEditorialReviewEngine:
 
         medication_match = self._first_match(
             _MEDICATION_DOSE_INSTRUCTION, *scan_fields
-        ) or self._first_match(_MEDICATION_TREATMENT_INSTRUCTION, *scan_fields)
+        )
         if medication_match:
             findings.append(
                 self._finding(
