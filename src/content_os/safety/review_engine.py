@@ -8,9 +8,10 @@ from content_os.models.evidence import EvidenceOutput
 SAFETY_RULESET_VERSION = "task-6a-v1"
 _MEDICATION_NAME = r"(?:insulin|metformin)"
 _OPENING_PUNCTUATION = r"(?:[\"'“”‘’(\[]\s*)*"
+_IMPERATIVE_LEAD_IN = r"(?:(?:[-*•]|\d+[.)])\s+)?(?:(?:then|next|now)\s+)?(?:please\s+)?"
 _IMPERATIVE_PREFIX = (
     rf"(?:(?<=^)|(?<=[.!?]\s)|(?<=\n)|(?<=,\s)|(?<=:\s)|(?<=;\s))"
-    rf"{_OPENING_PUNCTUATION}(?:please\s+)?"
+    rf"{_OPENING_PUNCTUATION}{_IMPERATIVE_LEAD_IN}"
 )
 
 _PERSONALIZED_INSTRUCTION = re.compile(

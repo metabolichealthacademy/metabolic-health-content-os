@@ -171,6 +171,26 @@ def test_colon_prefixed_imperative_medication_instruction_is_blocking() -> None:
     assert "medication_dose_instruction" in finding_codes(review)
 
 
+def test_list_marker_imperative_medication_instruction_is_blocking() -> None:
+    review = MedicalEditorialReviewEngine().review(
+        draft(body="- Start metformin tonight."),
+        evidence("nih-1"),
+    )
+
+    assert review.approved is False
+    assert "medication_dose_instruction" in finding_codes(review)
+
+
+def test_then_prefixed_imperative_medication_instruction_is_blocking() -> None:
+    review = MedicalEditorialReviewEngine().review(
+        draft(body="Then start metformin tonight."),
+        evidence("nih-1"),
+    )
+
+    assert review.approved is False
+    assert "medication_dose_instruction" in finding_codes(review)
+
+
 def test_no_supported_claims_when_evidence_has_no_structural_support() -> None:
     unsupported_evidence = EvidenceOutput(
         claims=[
