@@ -79,7 +79,7 @@ class MedicalEditorialReviewEngine:
                     "Draft has no structurally supported claims.",
                 )
             )
-        elif not supported_source_ids:
+        elif not draft.cited_source_ids and not supported_source_ids:
             findings.append(
                 self._finding(
                     "evidence",
