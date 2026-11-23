@@ -3,8 +3,10 @@
 This module does not publish or issue approvals. Publisher identity must come
 from server-side authentication, never an untrusted HTTP request field.
 """
+
 from datetime import UTC, datetime
 from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
