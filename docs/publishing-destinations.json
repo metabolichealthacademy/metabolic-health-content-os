@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0",
+  "purpose": "Public destination registry for review only. No authentication or publishing is configured.",
+  "publish_enabled": false,
+  "require_explicit_owner_approval": true,
+  "source": "user-provided destinations on 2026-11-23; external ownership/authentication not verified",
+  "destinations": [
+    {
+      "id": "mha-website",
+      "platform": "website",
+      "brand": "metabolic_health_academy",
+      "url": "https://themetabolichealthacademy.com/index.html",
+      "status": "candidate_unverified",
+      "enabled": false
+    },
+    {
+      "id": "facebook-profile-61594829624891",
+      "platform": "facebook",
+      "brand": "unconfirmed",
+      "url": "https://www.facebook.com/profile.php?id=61594829624891",
+      "status": "candidate_unverified",
+      "enabled": false
+    },
+    {
+      "id": "ask-metabolic-doctor-substack",
+      "platform": "substack",
+      "brand": "ask_the_metabolic_doctor",
+      "url": "https://open.substack.com/pub/askthemetabolicdoctor",
+      "status": "candidate_unverified",
+      "enabled": false
+    },
+    {
+      "id": "mha-instagram",
+      "platform": "instagram",
+      "brand": "metabolic_health_academy",
+      "url": "https://www.instagram.com/themetabolichealthacademy/",
+      "status": "candidate_unverified",
+      "enabled": false
+    },
+    {
+      "id": "ask-metabolic-doctor-instagram",
+      "platform": "instagram",
+      "brand": "ask_the_metabolic_doctor",
+      "url": "https://www.instagram.com/askthemetabolicdoctor/",
+      "status": "candidate_unverified",
+      "enabled": false
+    },
+    {
+      "id": "ask-metabolic-doctor-x",
+      "platform": "x",
+      "brand": "ask_the_metabolic_doctor",
+      "url": "https://x.com/askmetabolicdr",
+      "status": "candidate_unverified",
+      "enabled": false
+    },
+    {
+      "id": "mha-youtube",
+      "platform": "youtube",
+      "brand": "metabolic_health_academy",
+      "url": "https://www.youtube.com/@TheMetabolicHealthAcademy",
+      "status": "candidate_unverified",
+      "enabled": false
+    },
+    {
+      "id": "mha-tiktok",
+      "platform": "tiktok",
+      "brand": "metabolic_health_academy",
+      "url": "https://www.tiktok.com/@metabolichealthacademy",
+      "status": "candidate_unverified",
+      "enabled": false
+    }
+  ]
+}
