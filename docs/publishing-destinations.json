@@ -54,11 +54,11 @@
       "enabled": false
     },
     {
-      "id": "youtube-unknown",
+      "id": "mha-youtube",
       "platform": "youtube",
-      "brand": "unconfirmed",
-      "url": null,
-      "status": "missing_channel_url_or_handle",
+      "brand": "metabolic_health_academy",
+      "url": "https://www.youtube.com/@TheMetabolicHealthAcademy",
+      "status": "candidate_unverified",
       "enabled": false
     },
     {
