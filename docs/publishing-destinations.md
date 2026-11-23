@@ -6,6 +6,7 @@ The accompanying `publishing-destinations.json` records public links supplied in
 - **Metabolic Health Academy:** main website and @themetabolichealthacademy Instagram.
 - **Ask the Metabolic Doctor:** Substack, @askthemetabolicdoctor Instagram, and @askmetabolicdr X.
 - **Unconfirmed brand association:** Facebook profile ID `61594829624891`.
+- **Metabolic Health Academy:** TikTok @metabolichealthacademy (owner-supplied destination, unverified and disabled).
 - **Missing:** YouTube channel handle or URL; the message introduced YouTube but did not give a channel URL.
 
 ## Mandatory next steps
