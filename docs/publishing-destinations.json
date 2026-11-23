@@ -60,6 +60,14 @@
       "url": null,
       "status": "missing_channel_url_or_handle",
       "enabled": false
+    },
+    {
+      "id": "mha-tiktok",
+      "platform": "tiktok",
+      "brand": "metabolic_health_academy",
+      "url": "https://www.tiktok.com/@metabolichealthacademy",
+      "status": "candidate_unverified",
+      "enabled": false
     }
   ]
 }
